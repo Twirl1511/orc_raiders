@@ -17,3 +17,4 @@ MonoBehaviour:
   _unitBalance: {fileID: 11400000, guid: 1f870383ffccb2d448b7b06614ac914a, type: 2}
   _raidWaves: {fileID: 11400000, guid: 404cb348eb8080049b46249cfc83d015, type: 2}
   _uiBalance: {fileID: 11400000, guid: fcada112575456b47b82e35b30636014, type: 2}
+  _camera: {fileID: 11400000, guid: 2b3eac6e4d3b449fb0ed214135ea4ef1, type: 2}

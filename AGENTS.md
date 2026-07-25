@@ -23,6 +23,8 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Do not assume a prefab or scene hierarchy is fixed. Improve it when that makes iteration easier.
 - Preserve Unity `.meta` files and avoid moving assets without a clear reason.
 - Use existing packages and Unity systems already present in the project before adding new dependencies.
+- Before implementing or changing gameplay mechanics, read `docs/game-description.md` and keep the implementation consistent with it.
+- If mechanic rules change during implementation, update `docs/game-description.md` in the same change.
 
 ## Config Workflow
 
@@ -32,7 +34,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Add new mechanic numbers to focused configs instead of putting balance values directly on scene components or prefabs.
 - Reference feature configs through `GameplayConfig` or a scene-level config provider. Do not scatter direct config references across every prefab unless the prefab itself is a reusable config-driven UI/control template.
 - Because this prototype does not currently include Zenject, use `GameplayConfigProvider` as the lightweight scene entry point. If DI is added later, bind configs from `GameplayConfig` the same way `Cradle of Winter` does in its gameplay installer.
-- Use `Tools/Configs/Open` to edit configs in one window and `Tools/Configs/Create Default Configs` to create the starter config asset set.
+- Use `🛠️Configs🛠️/Open` to edit configs in one window and `🛠️Configs🛠️/Create Default Configs` to create the starter config asset set.
 
 ## Code Style
 
@@ -56,6 +58,12 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Put reusable UI pieces into prefabs when they are likely to be repeated or tuned often.
 - Make key UI state obvious: selected, disabled, affordable/unaffordable, cooldown, empty, full, warning, success.
 - If a UI control affects gameplay tuning, connect it to a clear config value instead of hardcoding the value in the UI component.
+
+## Prototype Visuals
+
+- When creating buildings, use simple white 2D sprites with text inside the sprite that says what the building is.
+- When creating units, use simple white 2D sprites with a text label above the unit that says what the unit is.
+- Keep these placeholder visuals clean, readable, and easy to replace later.
 
 ## Gameplay Implementation
 

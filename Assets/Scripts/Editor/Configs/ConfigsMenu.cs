@@ -2,7 +2,7 @@ using UnityEditor;
 
 public static class ConfigsMenu
 {
-    [MenuItem("Tools/Configs/Open")]
+    [MenuItem("🛠️Configs🛠️/Open")]
     public static void OpenConfigsWindow()
     {
         ConfigsWindow.Open();

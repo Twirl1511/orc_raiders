@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class ConfigAssetCreator
 {
-    [MenuItem("Tools/Configs/Create Default Configs")]
+    [MenuItem("🛠️Configs🛠️/Create Default Configs")]
     public static void CreateDefaultConfigs()
     {
         EnsureConfigsFolder();
@@ -13,6 +13,7 @@ public static class ConfigAssetCreator
         UnitBalanceConfig unitBalanceConfig = LoadOrCreate<UnitBalanceConfig>("2_Unit Balance.asset");
         RaidWaveConfig raidWaveConfig = LoadOrCreate<RaidWaveConfig>("3_Raid Waves.asset");
         UiBalanceConfig uiBalanceConfig = LoadOrCreate<UiBalanceConfig>("4_UI Balance.asset");
+        CameraConfig cameraConfig = LoadOrCreate<CameraConfig>("5_Camera.asset");
         GameplayConfig gameplayConfig = LoadOrCreate<GameplayConfig>("9_Gameplay Config.asset");
 
         SerializedObject serializedGameplayConfig = new SerializedObject(gameplayConfig);
@@ -21,6 +22,7 @@ public static class ConfigAssetCreator
         AssignIfEmpty(serializedGameplayConfig, "_unitBalance", unitBalanceConfig);
         AssignIfEmpty(serializedGameplayConfig, "_raidWaves", raidWaveConfig);
         AssignIfEmpty(serializedGameplayConfig, "_uiBalance", uiBalanceConfig);
+        AssignIfEmpty(serializedGameplayConfig, "_camera", cameraConfig);
         serializedGameplayConfig.ApplyModifiedPropertiesWithoutUndo();
 
         EditorUtility.SetDirty(gameplayConfig);

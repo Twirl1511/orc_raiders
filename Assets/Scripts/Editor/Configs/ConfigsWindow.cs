@@ -76,12 +76,6 @@ public sealed class ConfigsWindow : EditorWindow
             LoadConfigs();
         }
 
-        if (GUILayout.Button("Create Defaults", EditorStyles.toolbarButton, GUILayout.Width(104f)))
-        {
-            ConfigAssetCreator.CreateDefaultConfigs();
-            LoadConfigs();
-        }
-
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
