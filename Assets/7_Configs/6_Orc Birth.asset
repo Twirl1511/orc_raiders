@@ -13,53 +13,7 @@ MonoBehaviour:
   m_Name: 6_Orc Birth
   m_EditorClassIdentifier: Assembly-CSharp::OrcBirthConfig
   _requiredDiceCount: 6
-  _startingDiceCount: 12
-  _diceTemplates:
-  - _id: strength_d6
-    _displayName: "\u0421\u0438\u043B\u0430 d6"
-    _faces:
-    - _statType: 2
-      _value: 1
-    - _statType: 2
-      _value: 2
-    - _statType: 2
-      _value: 3
-    - _statType: 2
-      _value: -1
-    - _statType: 0
-      _value: 0
-    - _statType: 1
-      _value: 2
-  - _id: agility_d6
-    _displayName: "\u041B\u043E\u0432\u043A\u043E\u0441\u0442\u044C d6"
-    _faces:
-    - _statType: 3
-      _value: 1
-    - _statType: 3
-      _value: 2
-    - _statType: 3
-      _value: 3
-    - _statType: 3
-      _value: -1
-    - _statType: 0
-      _value: 0
-    - _statType: 1
-      _value: 2
-  - _id: intelligence_d6
-    _displayName: "\u0418\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442 d6"
-    _faces:
-    - _statType: 4
-      _value: 1
-    - _statType: 4
-      _value: 2
-    - _statType: 4
-      _value: 3
-    - _statType: 4
-      _value: -1
-    - _statType: 0
-      _value: 0
-    - _statType: 1
-      _value: 2
+  _diceConfig: {fileID: 11400000, guid: e0b719f07e2a4f7db1bbf54472456a21, type: 2}
   _minimumHealthAfterBirth: 1
   _firstOrcSpawnPosition: {x: -5.5, y: -1.7}
   _orcSpawnSpacing: {x: 1.45, y: 0}

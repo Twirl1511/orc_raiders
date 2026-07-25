@@ -32,13 +32,12 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 
 ## Config Workflow
 
-- Follow the config workflow from `D:/WORK/Cradle of Winter`: ScriptableObject configs live as separate assets, and a central `GameplayConfig` references the feature configs used by gameplay.
+- Follow the config workflow from `D:/WORK/Cradle of Winter`: ScriptableObject configs live as separate assets, but create only configs that are needed for explicitly requested mechanics.
 - Store config assets in `Assets/7_Configs` with numeric prefixes so important configs stay easy to scan and compare.
 - Runtime config classes should use `[CreateAssetMenu(..., menuName = "GAME/...")]`, private serialized fields, and public read-only properties.
 - Add new mechanic numbers to focused configs instead of putting balance values directly on scene components or prefabs.
-- Reference feature configs through `GameplayConfig` or a scene-level config provider. Do not scatter direct config references across every prefab unless the prefab itself is a reusable config-driven UI/control template.
-- Because this prototype does not currently include Zenject, use `GameplayConfigProvider` as the lightweight scene entry point. If DI is added later, bind configs from `GameplayConfig` the same way `Cradle of Winter` does in its gameplay installer.
-- Use `🛠️Configs🛠️/Open` to edit configs in one window and `🛠️Configs🛠️/Create Default Configs` to create the starter config asset set.
+- Reference feature configs through serialized scene references, narrow config providers, or singletons only when they already exist for the requested mechanic. Do not scatter direct config references across every prefab unless the prefab itself is a reusable config-driven UI/control template.
+- Use `🛠️Configs🛠️/Open` to edit existing configs in one window. Do not add default-config generation menus unless explicitly requested.
 
 ## Code Style
 
@@ -50,6 +49,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Keep gameplay tuning data in named config assets. Use component `[SerializeField]` fields mainly for object references, local presentation settings, and links to configs.
 - Group related numbers into focused configs such as unit stats, wave settings, economy, skills, rewards, UI balance, and difficulty curves.
 - Make configs easy to duplicate and compare so different mechanic variants can be tested quickly.
+- Define dice in `DiceConfig`: each dice entry is one available prototype die with a manually authored unique id, display name, and a faces array. A face uses `Add` and `Remove` stat changes backed by the stat enum.
 - Use events/callbacks only when they simplify the flow. Direct references are fine for prototype features.
 - Avoid premature save systems, networking, asset pipelines, service layers, or heavy data frameworks unless explicitly requested.
 - Add comments only for non-obvious gameplay logic or temporary prototype shortcuts.

@@ -1,0 +1,195 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5418a86a9c74c0c8e4df75a8ad8ce2b, type: 3}
+  m_Name: 7_Dice
+  m_EditorClassIdentifier: Assembly-CSharp::DiceConfig
+  _dice:
+  - _id: strength_basic_d6_01
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0441\u0438\u043B\u044B"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: strength_basic_d6_02
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0441\u0438\u043B\u044B"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: strength_basic_d6_03
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0441\u0438\u043B\u044B"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: strength_basic_d6_04
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0441\u0438\u043B\u044B"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 2, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: agility_basic_d6_01
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: agility_basic_d6_02
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: agility_basic_d6_03
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: agility_basic_d6_04
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: intelligence_basic_d6_01
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442\u0430"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: intelligence_basic_d6_02
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442\u0430"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: intelligence_basic_d6_03
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442\u0430"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 3}
+      _remove: {_statType: 0, _value: 0}
+  - _id: intelligence_basic_d6_04
+    _displayName: "\u041A\u0443\u0431\u0438\u043A \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442\u0430"
+    _faces:
+    - _add: {_statType: 2, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 3, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 1, _value: 1}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 2}
+      _remove: {_statType: 0, _value: 0}
+    - _add: {_statType: 4, _value: 3}
+      _remove: {_statType: 0, _value: 0}

@@ -27,7 +27,6 @@ public sealed class OrcBirthSystem : MonoBehaviour
     private readonly Dictionary<GameObject, OrcRuntimeData> _orcDataByObject = new Dictionary<GameObject, OrcRuntimeData>();
 
     private Sprite _whiteSprite;
-    private int _nextDiceId = 1;
     private int _nextOrcId = 1;
     private bool _initialized;
 
@@ -106,6 +105,16 @@ public sealed class OrcBirthSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(OrcBirthConfig)}.");
         }
 
+        if (_config.DiceConfig == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(DiceConfig)} in {nameof(OrcBirthConfig)}.");
+        }
+
+        if (!_config.DiceConfig.ValidateForRuntime(_config))
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid dice config.");
+        }
+
         if (_camera == null)
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires scene camera.");
@@ -122,12 +131,12 @@ public sealed class OrcBirthSystem : MonoBehaviour
     {
         _availableDice.Clear();
         _selectedDice.Clear();
-        _nextDiceId = 1;
 
-        for (int i = 0; i < _config.StartingDiceCount; i++)
+        IReadOnlyList<DiceDefinition> configuredDice = _config.DiceConfig.Dice;
+
+        for (int i = 0; i < configuredDice.Count; i++)
         {
-            _availableDice.Add(new DiceRuntimeData(_nextDiceId, _config.GetDiceTemplate(i)));
-            _nextDiceId++;
+            _availableDice.Add(new DiceRuntimeData(configuredDice[i]));
         }
     }
 
@@ -152,7 +161,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
         for (int i = 0; i < dice.Count; i++)
         {
             DiceRuntimeData diceData = dice[i];
-            Button diceButton = CreateDiceButton(root, $"{diceData.Id}\n{diceData.Template.DisplayName}");
+            Button diceButton = CreateDiceButton(root, diceData.Definition.DisplayName);
             diceButton.onClick.AddListener(() => clickAction(diceData));
         }
     }
@@ -202,9 +211,10 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         for (int i = 0; i < _selectedDice.Count; i++)
         {
-            DiceFaceDefinition face = _selectedDice[i].Template.Roll();
+            DiceDefinition dice = _selectedDice[i].Definition;
+            DiceFaceDefinition face = dice.Roll();
             stats.Apply(face);
-            rollTexts.Add(face.GetDisplayText());
+            rollTexts.Add($"{dice.DisplayName}: {face.GetDisplayText()}");
         }
 
         stats.ClampAfterBirth(_config.MinimumHealthAfterBirth);
@@ -298,13 +308,11 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private sealed class DiceRuntimeData
     {
-        public readonly int Id;
-        public readonly DiceTemplateDefinition Template;
+        public readonly DiceDefinition Definition;
 
-        public DiceRuntimeData(int id, DiceTemplateDefinition template)
+        public DiceRuntimeData(DiceDefinition definition)
         {
-            Id = id;
-            Template = template;
+            Definition = definition;
         }
     }
 
