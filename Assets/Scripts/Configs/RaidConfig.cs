@@ -14,6 +14,7 @@ public sealed class RaidConfig : ScriptableObject
     [Header("Enemies")]
     [SerializeField, Min(1)] private int _minEnemies = 1;
     [SerializeField, Min(1)] private int _maxEnemies = 3;
+    [SerializeField, Min(1)] private int _maxEnemiesPerBattle = 2;
 
     public int StartingRaidCount => _startingRaidCount;
     public float NewRaidIntervalSeconds => _newRaidIntervalSeconds;
@@ -21,6 +22,7 @@ public sealed class RaidConfig : ScriptableObject
     public int MaxGoldReward => _maxGoldReward;
     public int MinEnemies => _minEnemies;
     public int MaxEnemies => _maxEnemies;
+    public int MaxEnemiesPerBattle => _maxEnemiesPerBattle;
 
     public bool ValidateForRuntime()
     {
@@ -29,7 +31,9 @@ public sealed class RaidConfig : ScriptableObject
             _minGoldReward >= 0 &&
             _maxGoldReward >= _minGoldReward &&
             _minEnemies > 0 &&
-            _maxEnemies >= _minEnemies;
+            _maxEnemies >= _minEnemies &&
+            _maxEnemiesPerBattle > 0 &&
+            _maxEnemiesPerBattle <= _maxEnemies;
     }
 
     private void OnValidate()
@@ -40,5 +44,6 @@ public sealed class RaidConfig : ScriptableObject
         _maxGoldReward = Mathf.Max(_minGoldReward, _maxGoldReward);
         _minEnemies = Mathf.Max(1, _minEnemies);
         _maxEnemies = Mathf.Max(_minEnemies, _maxEnemies);
+        _maxEnemiesPerBattle = Mathf.Clamp(_maxEnemiesPerBattle, 1, _maxEnemies);
     }
 }

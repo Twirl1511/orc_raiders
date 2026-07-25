@@ -10,6 +10,7 @@ public sealed class OrcBirthConfig : ScriptableObject
 
     [Header("Stats")]
     [SerializeField] private StatsConfig _statsConfig = null;
+    [SerializeField] private RestConfig _restConfig = null;
 
     [Header("Orc")]
     [SerializeField] private Vector2 _orcVisualSize = new Vector2(0.65f, 0.65f);
@@ -28,6 +29,7 @@ public sealed class OrcBirthConfig : ScriptableObject
     public int RequiredDiceCount => _requiredDiceCount;
     public DiceConfig DiceConfig => _diceConfig;
     public StatsConfig StatsConfig => _statsConfig;
+    public RestConfig RestConfig => _restConfig;
     public Vector2 OrcVisualSize => new Vector2(Mathf.Max(0.01f, _orcVisualSize.x), Mathf.Max(0.01f, _orcVisualSize.y));
     public Color OrcVisualColor => _orcVisualColor;
     public int OrcSpriteSortingOrder => _orcSpriteSortingOrder;

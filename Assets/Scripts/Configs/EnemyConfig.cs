@@ -23,7 +23,8 @@ public sealed class EnemyConfig : ScriptableObject
             EnemyDefinition enemy = _enemies[i];
 
             if (enemy == null || enemy.EnemyType == EnemyType.None || string.IsNullOrWhiteSpace(enemy.DisplayName) ||
-                enemy.Stats == null || !usedTypes.Add(enemy.EnemyType))
+                enemy.Stats == null || enemy.MinimumHp < 0f || enemy.AttackIntervalSeconds <= 0f ||
+                !usedTypes.Add(enemy.EnemyType))
             {
                 return false;
             }
@@ -70,9 +71,13 @@ public sealed class EnemyDefinition
 {
     [SerializeField] private string _displayName = "Враг";
     [SerializeField] private EnemyType _enemyType = EnemyType.None;
+    [SerializeField, Min(0f)] private float _minimumHp = 0f;
+    [SerializeField, Min(0.01f)] private float _attackIntervalSeconds = 1f;
     [SerializeField] private OrcStats _stats = new OrcStats();
 
     public string DisplayName => _displayName;
     public EnemyType EnemyType => _enemyType;
+    public float MinimumHp => _minimumHp;
+    public float AttackIntervalSeconds => _attackIntervalSeconds;
     public OrcStats Stats => _stats;
 }

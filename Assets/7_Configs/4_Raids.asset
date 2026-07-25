@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3f7c4e6d9a54a7d91c625cb33d7f2aa, type: 3}
   m_Name: 4_Raids
   m_EditorClassIdentifier: Assembly-CSharp::RaidConfig
-  _startingRaidCount: 3
+  _startingRaidCount: 1
   _newRaidIntervalSeconds: 60
   _minGoldReward: 10
   _maxGoldReward: 35
-  _minEnemies: 1
-  _maxEnemies: 3
+  _minEnemies: 3
+  _maxEnemies: 10
+  _maxEnemiesPerBattle: 2

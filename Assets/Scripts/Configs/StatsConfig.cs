@@ -50,6 +50,23 @@ public sealed class StatsConfig : ScriptableObject
         return Mathf.Clamp(value, GetPrimaryStatMinimumValue(statType), _maxPrimaryStatValue);
     }
 
+    public float GetSecondaryStatMinimumValue(OrcSecondaryStatType statType)
+    {
+        for (int i = 0; i < _secondaryStats.Count; i++)
+        {
+            SecondaryStatDefinition definition = _secondaryStats[i];
+
+            if (definition != null && definition.StatType == statType)
+            {
+                return statType == OrcSecondaryStatType.AttackSpeed
+                    ? _attackIntervalSeconds
+                    : definition.MinimumValue;
+            }
+        }
+
+        return 0f;
+    }
+
     public SecondaryStatsSnapshot CalculateSecondaryStats(OrcStats primaryStats)
     {
         SecondaryStatsSnapshot snapshot = new SecondaryStatsSnapshot();

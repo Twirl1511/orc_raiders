@@ -15,11 +15,12 @@ MonoBehaviour:
   _requiredDiceCount: 6
   _diceConfig: {fileID: 11400000, guid: e0b719f07e2a4f7db1bbf54472456a21, type: 2}
   _statsConfig: {fileID: 11400000, guid: 24170c34a08f4843bdd2ca6c88a02000, type: 2}
+  _restConfig: {fileID: 11400000, guid: bdb66b92acab478fa59c6afd2be56ae4, type: 2}
   _orcVisualSize: {x: 0.65, y: 0.65}
   _orcVisualColor: {r: 0.45, g: 0.75, b: 0.4, a: 1}
   _orcSpriteSortingOrder: 20
   _orcLabelSortingOrder: 25
-  _firstOrcSpawnPosition: {x: -5.5, y: -1.7}
+  _firstOrcSpawnPosition: {x: -5.5, y: 2.05}
   _orcSpawnSpacing: {x: 1.45, y: 0}
   _maxOrcsPerRow: 6
   _firstRestingOrcPosition: {x: 3.2, y: -1.7}

@@ -12,12 +12,13 @@ public sealed class OrcRuntimeData
 {
     private readonly List<string> _rollTexts;
 
-    public OrcRuntimeData(string name, OrcStats stats, List<string> rollTexts)
+    public OrcRuntimeData(string name, OrcStats stats, List<string> rollTexts, float maxHp)
     {
         Name = name;
         Stats = stats;
         _rollTexts = rollTexts ?? new List<string>();
         State = OrcActivityState.OnBase;
+        SetMaxHp(maxHp, true);
     }
 
     public string Name { get; }
@@ -26,6 +27,9 @@ public sealed class OrcRuntimeData
     public OrcActivityState State { get; private set; }
     public GameObject ViewObject { get; private set; }
     public Vector2 MapPosition { get; private set; }
+    public float CurrentHp { get; private set; }
+    public float MaxHp { get; private set; }
+    public bool IsFullyHealed => CurrentHp >= MaxHp;
 
     public void AttachView(GameObject viewObject)
     {
@@ -40,6 +44,34 @@ public sealed class OrcRuntimeData
     public void SetMapPosition(Vector2 mapPosition)
     {
         MapPosition = mapPosition;
+    }
+
+    public void SetMaxHp(float maxHp, bool fillCurrentHp)
+    {
+        MaxHp = Mathf.Max(1f, maxHp);
+
+        if (fillCurrentHp)
+        {
+            CurrentHp = MaxHp;
+            return;
+        }
+
+        CurrentHp = Mathf.Clamp(CurrentHp, 0f, MaxHp);
+    }
+
+    public void SetCurrentHp(float hp)
+    {
+        CurrentHp = Mathf.Clamp(hp, 0f, MaxHp);
+    }
+
+    public void Heal(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        SetCurrentHp(CurrentHp + amount);
     }
 
     public string GetStateDisplayName()

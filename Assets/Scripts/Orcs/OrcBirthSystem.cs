@@ -7,6 +7,10 @@ using UnityEngine.UI;
 
 public sealed class OrcBirthSystem : MonoBehaviour
 {
+    private const int _orcInfoHpBarCells = 14;
+    private const char _filledHpCell = '#';
+    private const char _emptyHpCell = '-';
+
     [Header("Config")]
     [SerializeField] private OrcBirthConfig _config = null;
     [SerializeField] private Camera _camera = null;
@@ -25,11 +29,15 @@ public sealed class OrcBirthSystem : MonoBehaviour
     [Header("Rest Zone")]
     [SerializeField] private Collider2D _restZoneCollider = null;
 
+    [Header("Raids")]
+    [SerializeField] private RaidSystem _raidSystem = null;
+
     private readonly List<DiceRuntimeData> _availableDice = new List<DiceRuntimeData>();
     private readonly List<DiceRuntimeData> _selectedDice = new List<DiceRuntimeData>();
     private readonly List<GameObject> _runtimeDiceButtons = new List<GameObject>();
     private readonly List<OrcRuntimeData> _orcs = new List<OrcRuntimeData>();
     private readonly Dictionary<GameObject, OrcRuntimeData> _orcDataByObject = new Dictionary<GameObject, OrcRuntimeData>();
+    private readonly Dictionary<OrcRuntimeData, float> _restHealTimers = new Dictionary<OrcRuntimeData, float>();
 
     private Sprite _whiteSprite;
     private OrcRuntimeData _selectedOrc;
@@ -60,7 +68,14 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void Update()
     {
-        if (!_initialized || _camera == null || Mouse.current == null)
+        if (!_initialized)
+        {
+            return;
+        }
+
+        UpdateRestingOrcs(Time.deltaTime);
+
+        if (_camera == null || Mouse.current == null)
         {
             return;
         }
@@ -120,6 +135,11 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void RefreshOrcAfterStateChange(OrcRuntimeData orcData)
     {
+        if (orcData.State != OrcActivityState.Resting)
+        {
+            _restHealTimers.Remove(orcData);
+        }
+
         RefreshOrcVisualStates();
 
         if (_selectedOrc == orcData)
@@ -165,6 +185,11 @@ public sealed class OrcBirthSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(StatsConfig)} in {nameof(OrcBirthConfig)}.");
         }
 
+        if (_config.RestConfig == null || !_config.RestConfig.ValidateForRuntime())
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid {nameof(RestConfig)} in {nameof(OrcBirthConfig)}.");
+        }
+
         if (!_config.DiceConfig.ValidateForRuntime(_config))
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid dice config.");
@@ -190,6 +215,11 @@ public sealed class OrcBirthSystem : MonoBehaviour
         if (_restZoneCollider == null)
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires rest zone collider reference.");
+        }
+
+        if (_raidSystem == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires raid system reference.");
         }
     }
 
@@ -231,6 +261,14 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         if (orcData == null)
         {
+            return;
+        }
+
+        Vector2 screenPosition = Mouse.current.position.ReadValue();
+
+        if (_raidSystem.TryAcceptDroppedOrc(orcData, screenPosition))
+        {
+            _statusText.text = $"{orcData.Name}: {orcData.GetStateDisplayName()}.";
             return;
         }
 
@@ -368,7 +406,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         stats.ClampAfterBirth(_config.StatsConfig);
 
-        OrcRuntimeData orcData = new OrcRuntimeData($"Орк {_nextOrcId}", stats, rollTexts);
+        float maxHp = CalculateOrcMaxHp(stats);
+        OrcRuntimeData orcData = new OrcRuntimeData($"Орк {_nextOrcId}", stats, rollTexts, maxHp);
         SpawnOrc(orcData);
 
         _nextOrcId++;
@@ -485,7 +524,80 @@ public sealed class OrcBirthSystem : MonoBehaviour
     {
         _selectedOrc = orcData;
         _orcInfoTitle.text = orcData.Name;
-        _orcInfoText.text = $"Состояние: {orcData.GetStateDisplayName()}\n\n{orcData.Stats.GetSummary(_config.StatsConfig)}\n\nВторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
+        _orcInfoText.text = $"Состояние: {orcData.GetStateDisplayName()}\n{FormatOrcHealthLine(orcData)}\n\n{orcData.Stats.GetSummary(_config.StatsConfig)}\n\nВторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
+    }
+
+    private void UpdateRestingOrcs(float deltaTime)
+    {
+        RestConfig restConfig = _config.RestConfig;
+
+        if (restConfig == null)
+        {
+            return;
+        }
+
+        float tickSeconds = restConfig.HealTickSeconds;
+
+        for (int i = 0; i < _orcs.Count; i++)
+        {
+            OrcRuntimeData orcData = _orcs[i];
+
+            if (orcData.State != OrcActivityState.Resting || orcData.IsFullyHealed)
+            {
+                _restHealTimers.Remove(orcData);
+                continue;
+            }
+
+            float healAmount = restConfig.GetHealAmount(orcData.MaxHp);
+
+            if (healAmount <= 0f)
+            {
+                continue;
+            }
+
+            _restHealTimers.TryGetValue(orcData, out float timer);
+            timer += deltaTime;
+            bool healed = false;
+
+            while (timer >= tickSeconds && !orcData.IsFullyHealed)
+            {
+                timer -= tickSeconds;
+                orcData.Heal(healAmount);
+                healed = true;
+            }
+
+            if (orcData.IsFullyHealed)
+            {
+                timer = 0f;
+            }
+
+            _restHealTimers[orcData] = timer;
+
+            if (healed && _selectedOrc == orcData)
+            {
+                ShowOrcInfo(orcData);
+            }
+        }
+    }
+
+    private float CalculateOrcMaxHp(OrcStats stats)
+    {
+        return Mathf.Max(1f, _config.StatsConfig.CalculateSecondaryStats(stats).MaxHp);
+    }
+
+    private static string FormatOrcHealthLine(OrcRuntimeData orcData)
+    {
+        int currentHp = Mathf.CeilToInt(orcData.CurrentHp);
+        int maxHp = Mathf.CeilToInt(orcData.MaxHp);
+        return $"Здоровье: {currentHp}/{maxHp} <mspace=0.45em>{FormatHpBar(orcData.CurrentHp, orcData.MaxHp)}</mspace>";
+    }
+
+    private static string FormatHpBar(float currentHp, float maxHp)
+    {
+        float ratio = maxHp <= 0f ? 0f : Mathf.Clamp01(currentHp / maxHp);
+        int filledCells = Mathf.Clamp(Mathf.RoundToInt(ratio * _orcInfoHpBarCells), 0, _orcInfoHpBarCells);
+        int emptyCells = _orcInfoHpBarCells - filledCells;
+        return $"<color=#FFFFFF>{new string(_filledHpCell, filledCells)}</color><color=#5B6570>{new string(_emptyHpCell, emptyCells)}</color>";
     }
 
     private Sprite CreateWhiteSprite()

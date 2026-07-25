@@ -13,90 +13,129 @@ MonoBehaviour:
   m_Name: 0_Stats
   m_EditorClassIdentifier: Assembly-CSharp::StatsConfig
   _maxPrimaryStatValue: 20
-  _attackIntervalSeconds: 1
+  _attackIntervalSeconds: 1.4
   _damageBlockPercentPerArmor: 3.75
   _maxDamageBlockPercent: 75
   _primaryStats:
   - _statType: 1
-    _displayName: "Выносливость"
+    _displayName: "\u0412\u044B\u043D\u043E\u0441\u043B\u0438\u0432\u043E\u0441\u0442\u044C"
     _minimumValue: 1
-    _description: "Основной стат. Влияет на здоровье."
+    _description: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0441\u0442\u0430\u0442.
+      \u0412\u043B\u0438\u044F\u0435\u0442 \u043D\u0430 \u0437\u0434\u043E\u0440\u043E\u0432\u044C\u0435."
   - _statType: 2
-    _displayName: "Сила"
+    _displayName: "\u0421\u0438\u043B\u0430"
     _minimumValue: 1
-    _description: "Основной стат. Влияет на урон в ближнем бою."
+    _description: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0441\u0442\u0430\u0442.
+      \u0412\u043B\u0438\u044F\u0435\u0442 \u043D\u0430 \u0443\u0440\u043E\u043D
+      \u0432 \u0431\u043B\u0438\u0436\u043D\u0435\u043C \u0431\u043E\u044E."
   - _statType: 3
-    _displayName: "Ловкость"
+    _displayName: "\u041B\u043E\u0432\u043A\u043E\u0441\u0442\u044C"
     _minimumValue: 1
-    _description: "Основной стат. Влияет на скорость атаки, урон в дальнем бою и уклонение."
+    _description: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0441\u0442\u0430\u0442.
+      \u0412\u043B\u0438\u044F\u0435\u0442 \u043D\u0430 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C
+      \u0430\u0442\u0430\u043A\u0438, \u0443\u0440\u043E\u043D \u0432 \u0434\u0430\u043B\u044C\u043D\u0435\u043C
+      \u0431\u043E\u044E \u0438 \u0443\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u0435."
   - _statType: 4
-    _displayName: "Интеллект"
+    _displayName: "\u0418\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442"
     _minimumValue: 1
-    _description: "Основной стат. Влияет на шанс найти больше лута."
+    _description: "\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0441\u0442\u0430\u0442.
+      \u0412\u043B\u0438\u044F\u0435\u0442 \u043D\u0430 \u0448\u0430\u043D\u0441
+      \u043D\u0430\u0439\u0442\u0438 \u0431\u043E\u043B\u044C\u0448\u0435 \u043B\u0443\u0442\u0430."
   _secondaryStats:
   - _statType: 3
-    _displayName: "Здоровье"
-    _valueSuffix: " HP"
-    _minimumValue: 10
-    _description: "Вторичный стат. Сейчас считается от выносливости."
+    _displayName: "\u0417\u0434\u043E\u0440\u043E\u0432\u044C\u0435"
+    _valueSuffix: ' HP'
+    _minimumValue: 60
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F
+      \u043E\u0442 \u0432\u044B\u043D\u043E\u0441\u043B\u0438\u0432\u043E\u0441\u0442\u0438."
   - _statType: 2
-    _displayName: "Урон в ближнем бою"
-    _valueSuffix: ""
-    _minimumValue: 1
-    _description: "Вторичный стат. Сейчас считается от силы."
+    _displayName: "\u0423\u0440\u043E\u043D \u0432 \u0431\u043B\u0438\u0436\u043D\u0435\u043C
+      \u0431\u043E\u044E"
+    _valueSuffix: 
+    _minimumValue: 5
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F
+      \u043E\u0442 \u0441\u0438\u043B\u044B."
   - _statType: 4
-    _displayName: "Урон в дальнем бою"
-    _valueSuffix: ""
-    _minimumValue: 1
-    _description: "Вторичный стат. Сейчас считается от ловкости."
+    _displayName: "\u0423\u0440\u043E\u043D \u0432 \u0434\u0430\u043B\u044C\u043D\u0435\u043C
+      \u0431\u043E\u044E"
+    _valueSuffix: 
+    _minimumValue: 5
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F
+      \u043E\u0442 \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438."
   - _statType: 1
-    _displayName: "Скорость атаки"
-    _valueSuffix: " сек."
-    _minimumValue: 0
-    _description: "Вторичный стат. Показывает, за сколько секунд делается одна атака. Базовое значение берется из _attackIntervalSeconds."
+    _displayName: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0430\u0442\u0430\u043A\u0438"
+    _valueSuffix: " \u0441\u0435\u043A."
+    _minimumValue: 0.1
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442, \u0437\u0430
+      \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434
+      \u0434\u0435\u043B\u0430\u0435\u0442\u0441\u044F \u043E\u0434\u043D\u0430 \u0430\u0442\u0430\u043A\u0430.
+      \u0411\u0430\u0437\u043E\u0432\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435
+      \u0431\u0435\u0440\u0435\u0442\u0441\u044F \u0438\u0437 _attackIntervalSeconds."
   - _statType: 7
-    _displayName: "Броня"
-    _valueSuffix: ""
+    _displayName: "\u0411\u0440\u043E\u043D\u044F"
+    _valueSuffix: 
     _minimumValue: 0
-    _description: "Вторичный стат. Сейчас базовое значение, позже будет считаться от предметов."
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0431\u0430\u0437\u043E\u0432\u043E\u0435
+      \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435, \u043F\u043E\u0437\u0436\u0435
+      \u0431\u0443\u0434\u0435\u0442 \u0441\u0447\u0438\u0442\u0430\u0442\u044C\u0441\u044F
+      \u043E\u0442 \u043F\u0440\u0435\u0434\u043C\u0435\u0442\u043E\u0432."
   - _statType: 5
-    _displayName: "Шанс найти больше лута"
-    _valueSuffix: "%"
+    _displayName: "\u0428\u0430\u043D\u0441 \u043D\u0430\u0439\u0442\u0438 \u0431\u043E\u043B\u044C\u0448\u0435
+      \u043B\u0443\u0442\u0430"
+    _valueSuffix: '%'
     _minimumValue: 0
-    _description: "Вторичный стат. Сейчас считается от интеллекта."
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F
+      \u043E\u0442 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442\u0430."
   - _statType: 6
-    _displayName: "Уклонение"
-    _valueSuffix: "%"
+    _displayName: "\u0423\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u0435"
+    _valueSuffix: '%'
     _minimumValue: 0
-    _description: "Вторичный стат. Сейчас считается от ловкости."
+    _description: "\u0412\u0442\u043E\u0440\u0438\u0447\u043D\u044B\u0439 \u0441\u0442\u0430\u0442.
+      \u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F
+      \u043E\u0442 \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u0438."
   _scalingRules:
   - _sourceStat: 1
     _targetStat: 3
     _mode: 0
     _valuePerPoint: 10
-    _description: "1 выносливость = +10 здоровья."
+    _description: "1 \u0432\u044B\u043D\u043E\u0441\u043B\u0438\u0432\u043E\u0441\u0442\u044C
+      = +10 \u0437\u0434\u043E\u0440\u043E\u0432\u044C\u044F."
   - _sourceStat: 2
     _targetStat: 2
     _mode: 0
     _valuePerPoint: 1
-    _description: "1 сила = +1 к урону в ближнем бою."
+    _description: "1 \u0441\u0438\u043B\u0430 = +1 \u043A \u0443\u0440\u043E\u043D\u0443
+      \u0432 \u0431\u043B\u0438\u0436\u043D\u0435\u043C \u0431\u043E\u044E."
   - _sourceStat: 3
     _targetStat: 1
     _mode: 0
     _valuePerPoint: -0.03
-    _description: "1 ловкость = -0.03 секунды к времени одной атаки."
+    _description: "1 \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u044C = -0.03 \u0441\u0435\u043A\u0443\u043D\u0434\u044B
+      \u043A \u0432\u0440\u0435\u043C\u0435\u043D\u0438 \u043E\u0434\u043D\u043E\u0439
+      \u0430\u0442\u0430\u043A\u0438."
   - _sourceStat: 3
     _targetStat: 4
     _mode: 0
     _valuePerPoint: 1
-    _description: "1 ловкость = +1 к урону в дальнем бою."
+    _description: "1 \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u044C = +1 \u043A
+      \u0443\u0440\u043E\u043D\u0443 \u0432 \u0434\u0430\u043B\u044C\u043D\u0435\u043C
+      \u0431\u043E\u044E."
   - _sourceStat: 3
     _targetStat: 6
     _mode: 1
     _valuePerPoint: 1
-    _description: "1 ловкость = +1% к уклонению."
+    _description: "1 \u043B\u043E\u0432\u043A\u043E\u0441\u0442\u044C = +1% \u043A
+      \u0443\u043A\u043B\u043E\u043D\u0435\u043D\u0438\u044E."
   - _sourceStat: 4
     _targetStat: 5
     _mode: 1
     _valuePerPoint: 1
-    _description: "1 интеллект = +1% к шансу найти больше лута."
+    _description: "1 \u0438\u043D\u0442\u0435\u043B\u043B\u0435\u043A\u0442 = +1%
+      \u043A \u0448\u0430\u043D\u0441\u0443 \u043D\u0430\u0439\u0442\u0438 \u0431\u043E\u043B\u044C\u0448\u0435
+      \u043B\u0443\u0442\u0430."
