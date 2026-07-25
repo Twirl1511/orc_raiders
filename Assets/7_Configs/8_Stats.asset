@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 029652d9e46444f8957dd47b245fe6b9, type: 3}
+  m_Name: 8_Stats
+  m_EditorClassIdentifier: Assembly-CSharp::StatsConfig
+  _maxPrimaryStatValue: 20
+  _primaryStats:
+  - _statType: 1
+    _displayName: "Выносливость"
+    _description: "Основной стат. Влияет на здоровье."
+  - _statType: 2
+    _displayName: "Сила"
+    _description: "Основной стат. Влияет на урон в ближнем бою."
+  - _statType: 3
+    _displayName: "Ловкость"
+    _description: "Основной стат. Влияет на скорость атаки, урон в дальнем бою и уклонение."
+  - _statType: 4
+    _displayName: "Интеллект"
+    _description: "Основной стат. Влияет на шанс найти больше лута."
+  _secondaryStats:
+  - _statType: 3
+    _displayName: "Здоровье"
+    _valueSuffix: " HP"
+    _showInOrcInfo: 1
+    _description: "Вторичный стат. Сейчас считается от выносливости."
+  - _statType: 2
+    _displayName: "Урон в ближнем бою"
+    _valueSuffix: ""
+    _showInOrcInfo: 1
+    _description: "Вторичный стат. Сейчас считается от силы."
+  - _statType: 4
+    _displayName: "Урон в дальнем бою"
+    _valueSuffix: ""
+    _showInOrcInfo: 1
+    _description: "Вторичный стат. Сейчас считается от ловкости."
+  - _statType: 1
+    _displayName: "Скорость атаки"
+    _valueSuffix: "%"
+    _showInOrcInfo: 1
+    _description: "Вторичный стат. Сейчас считается от ловкости."
+  - _statType: 5
+    _displayName: "Шанс найти больше лута"
+    _valueSuffix: "%"
+    _showInOrcInfo: 0
+    _description: "Вторичный стат. Сейчас считается от интеллекта."
+  - _statType: 6
+    _displayName: "Уклонение"
+    _valueSuffix: "%"
+    _showInOrcInfo: 0
+    _description: "Вторичный стат. Сейчас считается от ловкости."
+  _scalingRules:
+  - _sourceStat: 1
+    _targetStat: 3
+    _mode: 0
+    _valuePerPoint: 10
+    _description: "1 выносливость = +10 здоровья."
+  - _sourceStat: 2
+    _targetStat: 2
+    _mode: 0
+    _valuePerPoint: 1
+    _description: "1 сила = +1 к урону в ближнем бою."
+  - _sourceStat: 3
+    _targetStat: 1
+    _mode: 1
+    _valuePerPoint: 1
+    _description: "1 ловкость = +1% к скорости атаки."
+  - _sourceStat: 3
+    _targetStat: 4
+    _mode: 0
+    _valuePerPoint: 1
+    _description: "1 ловкость = +1 к урону в дальнем бою."
+  - _sourceStat: 3
+    _targetStat: 6
+    _mode: 1
+    _valuePerPoint: 1
+    _description: "1 ловкость = +1% к уклонению."
+  - _sourceStat: 4
+    _targetStat: 5
+    _mode: 1
+    _valuePerPoint: 1
+    _description: "1 интеллект = +1% к шансу найти больше лута."

@@ -123,8 +123,8 @@ public sealed class DiceFaceDefinition
     {
         switch (statType)
         {
-            case OrcStatType.Health:
-                return "здоровье";
+            case OrcStatType.Endurance:
+                return "выносливость";
             case OrcStatType.Strength:
                 return "сила";
             case OrcStatType.Agility:

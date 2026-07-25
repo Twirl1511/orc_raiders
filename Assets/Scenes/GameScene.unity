@@ -193,6 +193,7 @@ MonoBehaviour:
   _diceButtonTemplate: {fileID: 225081054}
   _selectedDiceLabel: {fileID: 1516786150}
   _statusText: {fileID: 183676722}
+  _orcInfoTitle: {fileID: 1277398314}
   _orcInfoText: {fileID: 861063189}
   _createOrcButton: {fileID: 669745059}
 --- !u!1 &151756169
@@ -276,7 +277,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -484,7 +485,7 @@ MonoBehaviour:
   m_charWidthMaxAdj: 0
   m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
+  m_overflowMode: 3
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
@@ -1194,7 +1195,7 @@ MonoBehaviour:
   m_MinWidth: -1
   m_MinHeight: -1
   m_PreferredWidth: -1
-  m_PreferredHeight: 150
+  m_PreferredHeight: 225
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
@@ -1275,7 +1276,7 @@ MonoBehaviour:
   m_charWidthMaxAdj: 0
   m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
+  m_overflowMode: 3
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
@@ -1355,7 +1356,7 @@ MonoBehaviour:
   m_MinWidth: -1
   m_MinHeight: -1
   m_PreferredWidth: -1
-  m_PreferredHeight: 34
+  m_PreferredHeight: 51
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
@@ -1471,6 +1472,7 @@ GameObject:
   - component: {fileID: 1395624771}
   - component: {fileID: 1395624770}
   - component: {fileID: 1395624769}
+  - component: {fileID: 1395624772}
   m_Layer: 0
   m_Name: Orc Info Panel
   m_TagString: Untagged
@@ -1497,7 +1499,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -20, y: -20}
-  m_SizeDelta: {x: 320, y: 220}
+  m_SizeDelta: {x: 480, y: 330}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1395624769
 MonoBehaviour:
@@ -1521,7 +1523,7 @@ MonoBehaviour:
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -1563,6 +1565,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1395624767}
   m_CullTransparentMesh: 1
+--- !u!114 &1395624772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1395624767}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bba9cb7b46574d5b932b627dfc4f93c1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::DraggableUiPanel
+  _dragTarget: {fileID: 1395624768}
+  _blockDragFromSelectables: 1
 --- !u!1 &1516786146
 GameObject:
   m_ObjectHideFlags: 0
@@ -1915,6 +1931,7 @@ GameObject:
   - component: {fileID: 1780767433}
   - component: {fileID: 1780767432}
   - component: {fileID: 1780767431}
+  - component: {fileID: 1780767434}
   m_Layer: 0
   m_Name: Orc Birth Panel
   m_TagString: Untagged
@@ -2012,6 +2029,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1780767429}
   m_CullTransparentMesh: 1
+--- !u!114 &1780767434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1780767429}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bba9cb7b46574d5b932b627dfc4f93c1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::DraggableUiPanel
+  _dragTarget: {fileID: 1780767430}
+  _blockDragFromSelectables: 1
 --- !u!1 &1918628130
 GameObject:
   m_ObjectHideFlags: 0
@@ -2731,7 +2762,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

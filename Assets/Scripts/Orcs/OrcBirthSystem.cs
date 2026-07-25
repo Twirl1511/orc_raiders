@@ -18,6 +18,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
     [SerializeField] private Button _diceButtonTemplate = null;
     [SerializeField] private TextMeshProUGUI _selectedDiceLabel = null;
     [SerializeField] private TextMeshProUGUI _statusText = null;
+    [SerializeField] private TextMeshProUGUI _orcInfoTitle = null;
     [SerializeField] private TextMeshProUGUI _orcInfoText = null;
     [SerializeField] private Button _createOrcButton = null;
 
@@ -110,9 +111,19 @@ public sealed class OrcBirthSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(DiceConfig)} in {nameof(OrcBirthConfig)}.");
         }
 
+        if (_config.StatsConfig == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(StatsConfig)} in {nameof(OrcBirthConfig)}.");
+        }
+
         if (!_config.DiceConfig.ValidateForRuntime(_config))
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid dice config.");
+        }
+
+        if (!_config.StatsConfig.ValidateForRuntime(_config))
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid stats config.");
         }
 
         if (_camera == null)
@@ -121,7 +132,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
 
         if (_canvas == null || _availableDiceRoot == null || _selectedDiceRoot == null || _diceButtonTemplate == null ||
-            _selectedDiceLabel == null || _statusText == null || _orcInfoText == null || _createOrcButton == null)
+            _selectedDiceLabel == null || _statusText == null || _orcInfoTitle == null || _orcInfoText == null ||
+            _createOrcButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires scene UI references.");
         }
@@ -143,6 +155,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
     private void ResetInfoText()
     {
         _statusText.text = $"Выбери минимум {_config.RequiredDiceCount} кубиков и нажми кнопку.";
+        _orcInfoTitle.text = "Орк";
         _orcInfoText.text = "Созданные орки появятся рядом с котлом.\nКлик по орку покажет статы.";
     }
 
@@ -217,14 +230,14 @@ public sealed class OrcBirthSystem : MonoBehaviour
             rollTexts.Add($"{dice.DisplayName}: {face.GetDisplayText()}");
         }
 
-        stats.ClampAfterBirth(_config.MinimumHealthAfterBirth);
+        stats.ClampAfterBirth(_config.MinimumEnduranceAfterBirth, _config.StatsConfig);
 
         OrcRuntimeData orcData = new OrcRuntimeData($"Орк {_nextOrcId}", stats, rollTexts);
         SpawnOrc(orcData);
 
         _nextOrcId++;
         _selectedDice.Clear();
-        _statusText.text = $"{orcData.Name} рожден.\nБроски: {string.Join(", ", rollTexts)}";
+        _statusText.text = $"{orcData.Name} рожден.";
         ShowOrcInfo(orcData);
         RefreshUi();
     }
@@ -271,7 +284,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void ShowOrcInfo(OrcRuntimeData orcData)
     {
-        _orcInfoText.text = $"{orcData.Name}\n{orcData.Stats.GetSummary()}\n\nБроски:\n{string.Join(", ", orcData.RollTexts)}";
+        _orcInfoTitle.text = orcData.Name;
+        _orcInfoText.text = $"{orcData.Stats.GetSummary(_config.StatsConfig)}\n\nВторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
     }
 
     private Sprite CreateWhiteSprite()
