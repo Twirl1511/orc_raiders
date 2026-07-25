@@ -570,6 +570,7 @@ public sealed class RaidSystem : MonoBehaviour
             raid.KilledEnemies = raid.Enemies.Count;
             CompleteLootGoldCollection(raid);
             CompleteAllProgressSegments(raid);
+            raid.RewardDice = _orcBirthSystem.AddRandomDiceFromConfigToPool();
         }
 
         _gold += raid.GoldFound;
@@ -581,8 +582,20 @@ public sealed class RaidSystem : MonoBehaviour
             _orcBirthSystem.SetOrcState(raid.Orc, success ? OrcActivityState.OnBase : OrcActivityState.Resting);
         }
 
-        string message = success ? "Орк прошел рейд и вернулся на базу." : "Орк проиграл бой и ушел отдыхать.";
+        string message = success ? GetSuccessMessage(raid) : "Орк проиграл бой и ушел отдыхать.";
         raid.Panel.ShowCompleted(raid.Id, success, message, raid.KilledEnemies, raid.Enemies.Count, GetRaidProgressRatio(raid), raid.GoldFound, raid.ExperienceGained);
+    }
+
+    private static string GetSuccessMessage(RaidRuntimeData raid)
+    {
+        string message = "Орк прошел рейд и вернулся на базу.";
+
+        if (raid.RewardDice != null)
+        {
+            message += $"\nНайден кубик: {raid.RewardDice.DisplayName}";
+        }
+
+        return message;
     }
 
     public void RefreshOrcCombatStats(OrcRuntimeData orcData)
@@ -859,6 +872,7 @@ public sealed class RaidSystem : MonoBehaviour
         public int LootGoldStart;
         public int LootGoldTarget;
         public bool CompleteAfterLoot;
+        public DiceDefinition RewardDice;
         public float BattleTransitionTimer;
         public float BattleTransitionSeconds;
         public int ProgressSegmentIndex;

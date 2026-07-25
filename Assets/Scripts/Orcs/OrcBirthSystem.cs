@@ -162,6 +162,22 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
     }
 
+    public DiceDefinition AddRandomDiceFromConfigToPool()
+    {
+        IReadOnlyList<DiceDefinition> configuredDice = _config.DiceConfig.Dice;
+
+        if (configuredDice.Count == 0)
+        {
+            return null;
+        }
+
+        DiceDefinition rewardDice = configuredDice[Random.Range(0, configuredDice.Count)];
+        _availableDice.Add(new DiceRuntimeData(rewardDice));
+        _statusText.text = $"Рейд принес кубик: {rewardDice.DisplayName}.";
+        RefreshUi();
+        return rewardDice;
+    }
+
     private void SetOrcStateAtPosition(OrcRuntimeData orcData, OrcActivityState state, Vector2 mapPosition)
     {
         if (orcData == null || !_orcs.Contains(orcData))
