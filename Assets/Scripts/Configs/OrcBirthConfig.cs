@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Orc Birth", menuName = "GAME/Orc Birth")]
@@ -11,6 +12,7 @@ public sealed class OrcBirthConfig : ScriptableObject
     [Header("Stats")]
     [SerializeField] private StatsConfig _statsConfig = null;
     [SerializeField] private RestConfig _restConfig = null;
+    [SerializeField] private LevelUpConfig _levelUpConfig = null;
 
     [Header("Orc")]
     [SerializeField] private Vector2 _orcVisualSize = new Vector2(0.65f, 0.65f);
@@ -30,6 +32,7 @@ public sealed class OrcBirthConfig : ScriptableObject
     public DiceConfig DiceConfig => _diceConfig;
     public StatsConfig StatsConfig => _statsConfig;
     public RestConfig RestConfig => _restConfig;
+    public LevelUpConfig LevelUpConfig => _levelUpConfig;
     public Vector2 OrcVisualSize => new Vector2(Mathf.Max(0.01f, _orcVisualSize.x), Mathf.Max(0.01f, _orcVisualSize.y));
     public Color OrcVisualColor => _orcVisualColor;
     public int OrcSpriteSortingOrder => _orcSpriteSortingOrder;
@@ -83,6 +86,42 @@ public sealed class OrcStats
         Apply(face.Remove.StatType, -face.Remove.Value);
     }
 
+    public void ApplyLevelBonuses(LevelUpConfig levelUpConfig, StatsConfig statsConfig)
+    {
+        if (levelUpConfig == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<PrimaryStatLevelBonus> bonuses = levelUpConfig.PrimaryStatBonuses;
+
+        for (int i = 0; i < bonuses.Count; i++)
+        {
+            PrimaryStatLevelBonus bonus = bonuses[i];
+
+            if (bonus != null)
+            {
+                Apply(bonus.StatType, bonus.ValuePerLevel);
+            }
+        }
+
+        Clamp(statsConfig);
+    }
+
+    public bool TryAddPrimaryStatPoint(OrcStatType statType, StatsConfig statsConfig)
+    {
+        int previousValue = GetValue(statType);
+
+        if (statType == OrcStatType.None)
+        {
+            return false;
+        }
+
+        Apply(statType, 1);
+        Clamp(statsConfig);
+        return GetValue(statType) > previousValue;
+    }
+
     private void Apply(OrcStatType statType, int value)
     {
         if (value == 0)
@@ -108,6 +147,11 @@ public sealed class OrcStats
     }
 
     public void ClampAfterBirth(StatsConfig statsConfig)
+    {
+        Clamp(statsConfig);
+    }
+
+    private void Clamp(StatsConfig statsConfig)
     {
         if (statsConfig != null)
         {

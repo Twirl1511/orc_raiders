@@ -26,6 +26,12 @@ public sealed class OrcBirthSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _orcInfoText = null;
     [SerializeField] private Button _createOrcButton = null;
 
+    [Header("Primary Stat Upgrade Buttons")]
+    [SerializeField] private Button _enduranceUpgradeButton = null;
+    [SerializeField] private Button _strengthUpgradeButton = null;
+    [SerializeField] private Button _agilityUpgradeButton = null;
+    [SerializeField] private Button _intelligenceUpgradeButton = null;
+
     [Header("Rest Zone")]
     [SerializeField] private Collider2D _restZoneCollider = null;
 
@@ -64,6 +70,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
         {
             _createOrcButton.onClick.RemoveListener(CreateOrc);
         }
+
+        RemovePrimaryStatUpgradeListeners();
     }
 
     private void Update()
@@ -121,6 +129,22 @@ public sealed class OrcBirthSystem : MonoBehaviour
         RefreshOrcAfterStateChange(orcData);
     }
 
+    public void AddExperienceToOrc(OrcRuntimeData orcData, int amount)
+    {
+        if (orcData == null || !_orcs.Contains(orcData) || amount <= 0)
+        {
+            return;
+        }
+
+        orcData.AddExperience(amount, _config.LevelUpConfig, _config.StatsConfig);
+        orcData.SetMaxHp(CalculateOrcMaxHp(orcData.Stats), false);
+
+        if (_selectedOrc == orcData)
+        {
+            ShowOrcInfo(orcData);
+        }
+    }
+
     private void SetOrcStateAtPosition(OrcRuntimeData orcData, OrcActivityState state, Vector2 mapPosition)
     {
         if (orcData == null || !_orcs.Contains(orcData))
@@ -162,6 +186,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
         _diceButtonTemplate.gameObject.SetActive(false);
         _createOrcButton.onClick.RemoveListener(CreateOrc);
         _createOrcButton.onClick.AddListener(CreateOrc);
+        ConfigurePrimaryStatUpgradeButtonVisuals();
+        AddPrimaryStatUpgradeListeners();
 
         CreateInitialDicePool();
         ResetInfoText();
@@ -190,6 +216,11 @@ public sealed class OrcBirthSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid {nameof(RestConfig)} in {nameof(OrcBirthConfig)}.");
         }
 
+        if (_config.LevelUpConfig == null || !_config.LevelUpConfig.ValidateForRuntime())
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(OrcBirthConfig)}.");
+        }
+
         if (!_config.DiceConfig.ValidateForRuntime(_config))
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid dice config.");
@@ -210,6 +241,12 @@ public sealed class OrcBirthSystem : MonoBehaviour
             _createOrcButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires scene UI references.");
+        }
+
+        if (_enduranceUpgradeButton == null || _strengthUpgradeButton == null || _agilityUpgradeButton == null ||
+            _intelligenceUpgradeButton == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires primary stat upgrade button references.");
         }
 
         if (_restZoneCollider == null)
@@ -325,6 +362,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
         _statusText.text = $"Выбери минимум {_config.RequiredDiceCount} кубиков и нажми кнопку.";
         _orcInfoTitle.text = "Орк";
         _orcInfoText.text = "Созданные орки появятся рядом с котлом.\nКлик по орку покажет статы.";
+        RefreshPrimaryStatUpgradeButtons(null);
     }
 
     private void RefreshUi()
@@ -524,7 +562,142 @@ public sealed class OrcBirthSystem : MonoBehaviour
     {
         _selectedOrc = orcData;
         _orcInfoTitle.text = orcData.Name;
-        _orcInfoText.text = $"Состояние: {orcData.GetStateDisplayName()}\n{FormatOrcHealthLine(orcData)}\n\n{orcData.Stats.GetSummary(_config.StatsConfig)}\n\nВторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
+        string freeStatsLine = orcData.FreePrimaryStatPoints > 0
+            ? $"Свободные статы: {orcData.FreePrimaryStatPoints}\n"
+            : "";
+
+        _orcInfoText.text = $"Состояние: {orcData.GetStateDisplayName()}\n" +
+            $"Уровень: {orcData.Level}    Опыт: {orcData.GetExperienceDisplay(_config.LevelUpConfig)}\n" +
+            freeStatsLine +
+            $"{FormatOrcHealthLine(orcData)}\n\n" +
+            $"{orcData.Stats.GetSummary(_config.StatsConfig)}\n\n" +
+            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
+        RefreshPrimaryStatUpgradeButtons(orcData);
+    }
+
+    private void AddPrimaryStatUpgradeListeners()
+    {
+        _enduranceUpgradeButton.onClick.RemoveListener(SpendEndurancePoint);
+        _strengthUpgradeButton.onClick.RemoveListener(SpendStrengthPoint);
+        _agilityUpgradeButton.onClick.RemoveListener(SpendAgilityPoint);
+        _intelligenceUpgradeButton.onClick.RemoveListener(SpendIntelligencePoint);
+
+        _enduranceUpgradeButton.onClick.AddListener(SpendEndurancePoint);
+        _strengthUpgradeButton.onClick.AddListener(SpendStrengthPoint);
+        _agilityUpgradeButton.onClick.AddListener(SpendAgilityPoint);
+        _intelligenceUpgradeButton.onClick.AddListener(SpendIntelligencePoint);
+    }
+
+    private void ConfigurePrimaryStatUpgradeButtonVisuals()
+    {
+        ConfigurePrimaryStatUpgradeButtonVisual(_enduranceUpgradeButton);
+        ConfigurePrimaryStatUpgradeButtonVisual(_strengthUpgradeButton);
+        ConfigurePrimaryStatUpgradeButtonVisual(_agilityUpgradeButton);
+        ConfigurePrimaryStatUpgradeButtonVisual(_intelligenceUpgradeButton);
+    }
+
+    private static void ConfigurePrimaryStatUpgradeButtonVisual(Button button)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        Image image = button.GetComponent<Image>();
+
+        if (image != null)
+        {
+            image.color = new Color(0.92f, 0.92f, 0.9f, 1f);
+            image.raycastTarget = true;
+        }
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (label != null)
+        {
+            label.text = "+";
+            label.fontSize = 16f;
+            label.color = Color.black;
+            label.alignment = TextAlignmentOptions.Center;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.raycastTarget = false;
+        }
+    }
+
+    private void RemovePrimaryStatUpgradeListeners()
+    {
+        if (_enduranceUpgradeButton != null)
+        {
+            _enduranceUpgradeButton.onClick.RemoveListener(SpendEndurancePoint);
+        }
+
+        if (_strengthUpgradeButton != null)
+        {
+            _strengthUpgradeButton.onClick.RemoveListener(SpendStrengthPoint);
+        }
+
+        if (_agilityUpgradeButton != null)
+        {
+            _agilityUpgradeButton.onClick.RemoveListener(SpendAgilityPoint);
+        }
+
+        if (_intelligenceUpgradeButton != null)
+        {
+            _intelligenceUpgradeButton.onClick.RemoveListener(SpendIntelligencePoint);
+        }
+    }
+
+    private void RefreshPrimaryStatUpgradeButtons(OrcRuntimeData orcData)
+    {
+        RefreshPrimaryStatUpgradeButton(_enduranceUpgradeButton, orcData, OrcStatType.Endurance);
+        RefreshPrimaryStatUpgradeButton(_strengthUpgradeButton, orcData, OrcStatType.Strength);
+        RefreshPrimaryStatUpgradeButton(_agilityUpgradeButton, orcData, OrcStatType.Agility);
+        RefreshPrimaryStatUpgradeButton(_intelligenceUpgradeButton, orcData, OrcStatType.Intelligence);
+    }
+
+    private void RefreshPrimaryStatUpgradeButton(Button button, OrcRuntimeData orcData, OrcStatType statType)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        bool visible = orcData != null && orcData.FreePrimaryStatPoints > 0;
+        button.gameObject.SetActive(visible);
+        button.interactable = visible && orcData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
+    }
+
+    private void SpendEndurancePoint()
+    {
+        SpendPrimaryStatPoint(OrcStatType.Endurance);
+    }
+
+    private void SpendStrengthPoint()
+    {
+        SpendPrimaryStatPoint(OrcStatType.Strength);
+    }
+
+    private void SpendAgilityPoint()
+    {
+        SpendPrimaryStatPoint(OrcStatType.Agility);
+    }
+
+    private void SpendIntelligencePoint()
+    {
+        SpendPrimaryStatPoint(OrcStatType.Intelligence);
+    }
+
+    private void SpendPrimaryStatPoint(OrcStatType statType)
+    {
+        if (_selectedOrc == null || !_selectedOrc.TrySpendFreePrimaryStatPoint(statType, _config.StatsConfig))
+        {
+            return;
+        }
+
+        _selectedOrc.SetMaxHp(CalculateOrcMaxHp(_selectedOrc.Stats), false);
+        _raidSystem.RefreshOrcCombatStats(_selectedOrc);
+        ShowOrcInfo(_selectedOrc);
     }
 
     private void UpdateRestingOrcs(float deltaTime)

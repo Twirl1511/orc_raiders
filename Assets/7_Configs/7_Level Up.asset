@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bad03adf61944939a381d6bbc062fbba, type: 3}
+  m_Name: 7_Level Up
+  m_EditorClassIdentifier: Assembly-CSharp::LevelUpConfig
+  _primaryStatBonuses:
+  - _statType: 1
+    _valuePerLevel: 1
+  - _statType: 2
+    _valuePerLevel: 1
+  - _statType: 3
+    _valuePerLevel: 1
+  - _statType: 4
+    _valuePerLevel: 1
+  _freePrimaryStatPointsPerLevel: 1
+  _experienceRequirements:
+  - _level: 1
+    _requiredExperience: 100
+  - _level: 2
+    _requiredExperience: 250
+  - _level: 3
+    _requiredExperience: 450
+  - _level: 4
+    _requiredExperience: 700
+  - _level: 5
+    _requiredExperience: 1000
+  - _level: 6
+    _requiredExperience: 1350
+  - _level: 7
+    _requiredExperience: 1750
+  - _level: 8
+    _requiredExperience: 2200
+  - _level: 9
+    _requiredExperience: 2700
+  - _level: 10
+    _requiredExperience: 3250

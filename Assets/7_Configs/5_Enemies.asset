@@ -17,6 +17,7 @@ MonoBehaviour:
     _enemyType: 1
     _minimumHp: 0
     _attackIntervalSeconds: 3
+    _experienceReward: 20
     _stats:
       _endurance: 2
       _strength: 2
@@ -26,6 +27,7 @@ MonoBehaviour:
     _enemyType: 2
     _minimumHp: 0
     _attackIntervalSeconds: 3
+    _experienceReward: 25
     _stats:
       _endurance: 1
       _strength: 1

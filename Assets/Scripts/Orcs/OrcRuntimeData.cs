@@ -29,6 +29,9 @@ public sealed class OrcRuntimeData
     public Vector2 MapPosition { get; private set; }
     public float CurrentHp { get; private set; }
     public float MaxHp { get; private set; }
+    public int Level { get; private set; } = 1;
+    public int Experience { get; private set; }
+    public int FreePrimaryStatPoints { get; private set; }
     public bool IsFullyHealed => CurrentHp >= MaxHp;
 
     public void AttachView(GameObject viewObject)
@@ -72,6 +75,65 @@ public sealed class OrcRuntimeData
         }
 
         SetCurrentHp(CurrentHp + amount);
+    }
+
+    public void AddExperience(int amount, LevelUpConfig levelUpConfig, StatsConfig statsConfig)
+    {
+        if (amount <= 0 || levelUpConfig == null)
+        {
+            return;
+        }
+
+        Experience += amount;
+
+        while (levelUpConfig.TryGetRequiredExperience(Level, out int requiredExperience) &&
+            Experience >= requiredExperience)
+        {
+            Level++;
+            FreePrimaryStatPoints += levelUpConfig.FreePrimaryStatPointsPerLevel;
+            Stats.ApplyLevelBonuses(levelUpConfig, statsConfig);
+        }
+    }
+
+    public bool CanSpendFreePrimaryStatPoint(OrcStatType statType, StatsConfig statsConfig)
+    {
+        if (FreePrimaryStatPoints <= 0 || statType == OrcStatType.None)
+        {
+            return false;
+        }
+
+        if (statsConfig == null)
+        {
+            return true;
+        }
+
+        return Stats.GetValue(statType) < statsConfig.MaxPrimaryStatValue;
+    }
+
+    public bool TrySpendFreePrimaryStatPoint(OrcStatType statType, StatsConfig statsConfig)
+    {
+        if (!CanSpendFreePrimaryStatPoint(statType, statsConfig))
+        {
+            return false;
+        }
+
+        if (!Stats.TryAddPrimaryStatPoint(statType, statsConfig))
+        {
+            return false;
+        }
+
+        FreePrimaryStatPoints--;
+        return true;
+    }
+
+    public string GetExperienceDisplay(LevelUpConfig levelUpConfig)
+    {
+        if (levelUpConfig != null && levelUpConfig.TryGetRequiredExperience(Level, out int requiredExperience))
+        {
+            return $"{Experience}/{requiredExperience}";
+        }
+
+        return $"{Experience}/-";
     }
 
     public string GetStateDisplayName()

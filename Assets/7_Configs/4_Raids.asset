@@ -19,3 +19,4 @@ MonoBehaviour:
   _minEnemies: 3
   _maxEnemies: 10
   _maxEnemiesPerBattle: 2
+  _battleTransitionDelaySeconds: 1.5

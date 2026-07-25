@@ -105,7 +105,32 @@ public sealed class RaidPanelView : MonoBehaviour
         _closeButton.gameObject.SetActive(false);
     }
 
-    public void ShowCompleted(int raidNumber, bool success, string message, int killedEnemies, int totalEnemies, int goldFound)
+    public void ShowBattleTransition(
+        int raidNumber,
+        int nextBattleNumber,
+        int battleCount,
+        string orcName,
+        float orcHp,
+        float orcMaxHp,
+        float transitionProgress,
+        int killedEnemies,
+        int totalEnemies,
+        int goldFound)
+    {
+        BuildIfNeeded();
+        _titleText.text = $"Рейд {raidNumber}";
+        _statusText.text = $"К группе {nextBattleNumber}/{battleCount}";
+        _timerText.text = "";
+        _orcNameText.text = $"{orcName}  {Mathf.CeilToInt(orcHp)}/{Mathf.CeilToInt(orcMaxHp)} HP";
+        SetBarFill(_orcHpFill, GetRatio(orcHp, orcMaxHp));
+        SetBarFill(_orcAttackFill, 0f);
+        SetTransitionProgress(transitionProgress);
+        ClearEnemies();
+        _logText.text = $"Следующая группа...\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}";
+        _closeButton.gameObject.SetActive(false);
+    }
+
+    public void ShowCompleted(int raidNumber, bool success, string message, int killedEnemies, int totalEnemies, int goldFound, int experienceGained)
     {
         BuildIfNeeded();
         _titleText.text = $"Рейд {raidNumber}";
@@ -114,7 +139,7 @@ public sealed class RaidPanelView : MonoBehaviour
         SetBarFill(_orcAttackFill, 0f);
         SetRaidProgress(killedEnemies, totalEnemies);
         ClearEnemies();
-        _logText.text = $"{message}\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}";
+        _logText.text = $"{message}\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}\nОпыт получен: {experienceGained}";
         _closeButton.gameObject.SetActive(true);
     }
 
@@ -356,6 +381,13 @@ public sealed class RaidPanelView : MonoBehaviour
         _raidProgressText.text = safeTotal <= 0
             ? "Прогресс рейда: ждет орка"
             : $"Прогресс рейда: {safeKilled}/{safeTotal}";
+        SetBarFill(_raidProgressFill, ratio);
+    }
+
+    private void SetTransitionProgress(float transitionProgress)
+    {
+        float ratio = Mathf.Clamp01(transitionProgress);
+        _raidProgressText.text = $"Следующая группа: {Mathf.RoundToInt(ratio * 100f)}%";
         SetBarFill(_raidProgressFill, ratio);
     }
 
