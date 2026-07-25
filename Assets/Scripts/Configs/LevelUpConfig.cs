@@ -7,11 +7,18 @@ public sealed class LevelUpConfig : ScriptableObject
 {
     [SerializeField] private List<PrimaryStatLevelBonus> _primaryStatBonuses = new List<PrimaryStatLevelBonus>();
     [SerializeField, Min(0)] private int _freePrimaryStatPointsPerLevel = 1;
+    [SerializeField, Min(0f)] private float _orcVisualSizeIncreasePercentPerLevel = 15f;
     [SerializeField] private List<LevelExperienceRequirement> _experienceRequirements = new List<LevelExperienceRequirement>();
 
     public IReadOnlyList<PrimaryStatLevelBonus> PrimaryStatBonuses => _primaryStatBonuses;
     public int FreePrimaryStatPointsPerLevel => Mathf.Max(0, _freePrimaryStatPointsPerLevel);
+    public float OrcVisualSizeIncreasePercentPerLevel => Mathf.Max(0f, _orcVisualSizeIncreasePercentPerLevel);
     public IReadOnlyList<LevelExperienceRequirement> ExperienceRequirements => _experienceRequirements;
+
+    public float GetOrcVisualSizeMultiplierForLevel(int level)
+    {
+        return Mathf.Pow(1f + OrcVisualSizeIncreasePercentPerLevel / 100f, Mathf.Max(0, level - 1));
+    }
 
     public bool TryGetRequiredExperience(int level, out int requiredExperience)
     {

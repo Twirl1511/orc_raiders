@@ -16,180 +16,468 @@ MonoBehaviour:
   - _id: strength_basic_d6_01
     _displayName: "\u043A\u0443\u0431 \u0441\u0438\u043B"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 1
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: strength_basic_d6_02
     _displayName: "\u043A\u0443\u0431 \u0441\u0438\u043B"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: strength_basic_d6_03
     _displayName: "\u043A\u0443\u0431 \u0441\u0438\u043B"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: strength_basic_d6_04
     _displayName: "\u043A\u0443\u0431 \u0441\u0438\u043B"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 2, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 2
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: agility_basic_d6_01
     _displayName: "\u043A\u0443\u0431 \u043B\u043E\u0432"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: agility_basic_d6_02
     _displayName: "\u043A\u0443\u0431 \u043B\u043E\u0432"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: agility_basic_d6_03
     _displayName: "\u043A\u0443\u0431 \u043B\u043E\u0432"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: agility_basic_d6_04
     _displayName: "\u043A\u0443\u0431 \u043B\u043E\u0432"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: intelligence_basic_d6_01
     _displayName: "\u043A\u0443\u0431 \u0438\u043D\u0442"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: intelligence_basic_d6_02
     _displayName: "\u043A\u0443\u0431 \u0438\u043D\u0442"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: intelligence_basic_d6_03
     _displayName: "\u043A\u0443\u0431 \u0438\u043D\u0442"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0
   - _id: intelligence_basic_d6_04
     _displayName: "\u043A\u0443\u0431 \u0438\u043D\u0442"
     _faces:
-    - _add: {_statType: 2, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 3, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 1, _value: 1}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 2}
-      _remove: {_statType: 0, _value: 0}
-    - _add: {_statType: 4, _value: 3}
-      _remove: {_statType: 0, _value: 0}
+    - _add:
+        _statType: 2
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 3
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 1
+        _value: 1
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 2
+      _remove:
+        _statType: 0
+        _value: 0
+    - _add:
+        _statType: 4
+        _value: 3
+      _remove:
+        _statType: 0
+        _value: 0

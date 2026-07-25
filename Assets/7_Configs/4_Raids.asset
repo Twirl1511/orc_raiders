@@ -18,7 +18,8 @@ MonoBehaviour:
   _waitingRaidLifetimeSeconds: 60
   _minGoldReward: 10
   _maxGoldReward: 35
-  _minEnemies: 3
-  _maxEnemies: 10
+  _minEnemies: 5
+  _maxEnemies: 15
+  _minEnemiesPerBattle: 1
   _maxEnemiesPerBattle: 2
   _battleTransitionDelaySeconds: 2

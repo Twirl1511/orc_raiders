@@ -16,7 +16,6 @@ public sealed class OrcBirthConfig : ScriptableObject
 
     [Header("Orc")]
     [SerializeField] private Vector2 _orcVisualSize = new Vector2(0.65f, 0.65f);
-    [SerializeField, Min(0f)] private float _orcVisualSizeIncreasePercentPerLevel = 15f;
     [SerializeField] private Color _orcVisualColor = new Color(0.45f, 0.75f, 0.4f, 1f);
     [SerializeField] private int _orcSpriteSortingOrder = 20;
     [SerializeField] private int _orcLabelSortingOrder = 25;
@@ -35,7 +34,6 @@ public sealed class OrcBirthConfig : ScriptableObject
     public RestConfig RestConfig => _restConfig;
     public LevelUpConfig LevelUpConfig => _levelUpConfig;
     public Vector2 OrcVisualSize => new Vector2(Mathf.Max(0.01f, _orcVisualSize.x), Mathf.Max(0.01f, _orcVisualSize.y));
-    public float OrcVisualSizeIncreasePercentPerLevel => Mathf.Max(0f, _orcVisualSizeIncreasePercentPerLevel);
     public Color OrcVisualColor => _orcVisualColor;
     public int OrcSpriteSortingOrder => _orcSpriteSortingOrder;
     public int OrcLabelSortingOrder => _orcLabelSortingOrder;
@@ -48,7 +46,9 @@ public sealed class OrcBirthConfig : ScriptableObject
 
     public Vector2 GetOrcVisualSizeForLevel(int level)
     {
-        float multiplier = Mathf.Pow(1f + OrcVisualSizeIncreasePercentPerLevel / 100f, Mathf.Max(0, level - 1));
+        float multiplier = _levelUpConfig != null
+            ? _levelUpConfig.GetOrcVisualSizeMultiplierForLevel(level)
+            : 1f;
         return OrcVisualSize * multiplier;
     }
 }

@@ -22,6 +22,7 @@ MonoBehaviour:
   - _statType: 4
     _valuePerLevel: 1
   _freePrimaryStatPointsPerLevel: 1
+  _orcVisualSizeIncreasePercentPerLevel: 5
   _experienceRequirements:
   - _level: 1
     _requiredExperience: 100

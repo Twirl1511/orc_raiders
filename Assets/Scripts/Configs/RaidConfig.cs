@@ -16,6 +16,7 @@ public sealed class RaidConfig : ScriptableObject
     [Header("Enemies")]
     [SerializeField, Min(1)] private int _minEnemies = 1;
     [SerializeField, Min(1)] private int _maxEnemies = 3;
+    [SerializeField, Min(1)] private int _minEnemiesPerBattle = 1;
     [SerializeField, Min(1)] private int _maxEnemiesPerBattle = 2;
     [SerializeField, Min(0f)] private float _battleTransitionDelaySeconds = 3f;
 
@@ -27,6 +28,7 @@ public sealed class RaidConfig : ScriptableObject
     public int MaxGoldReward => _maxGoldReward;
     public int MinEnemies => _minEnemies;
     public int MaxEnemies => _maxEnemies;
+    public int MinEnemiesPerBattle => _minEnemiesPerBattle;
     public int MaxEnemiesPerBattle => _maxEnemiesPerBattle;
     public float BattleTransitionDelaySeconds => Mathf.Max(0f, _battleTransitionDelaySeconds);
 
@@ -39,7 +41,8 @@ public sealed class RaidConfig : ScriptableObject
             _maxGoldReward >= _minGoldReward &&
             _minEnemies > 0 &&
             _maxEnemies >= _minEnemies &&
-            _maxEnemiesPerBattle > 0 &&
+            _minEnemiesPerBattle > 0 &&
+            _maxEnemiesPerBattle >= _minEnemiesPerBattle &&
             _maxEnemiesPerBattle <= _maxEnemies &&
             _battleTransitionDelaySeconds >= 0f;
     }
@@ -53,7 +56,8 @@ public sealed class RaidConfig : ScriptableObject
         _maxGoldReward = Mathf.Max(_minGoldReward, _maxGoldReward);
         _minEnemies = Mathf.Max(1, _minEnemies);
         _maxEnemies = Mathf.Max(_minEnemies, _maxEnemies);
-        _maxEnemiesPerBattle = Mathf.Clamp(_maxEnemiesPerBattle, 1, _maxEnemies);
+        _minEnemiesPerBattle = Mathf.Clamp(_minEnemiesPerBattle, 1, _maxEnemies);
+        _maxEnemiesPerBattle = Mathf.Clamp(_maxEnemiesPerBattle, _minEnemiesPerBattle, _maxEnemies);
         _battleTransitionDelaySeconds = Mathf.Max(0f, _battleTransitionDelaySeconds);
     }
 }

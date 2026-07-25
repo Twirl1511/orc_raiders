@@ -288,9 +288,72 @@ public sealed class RaidSystem : MonoBehaviour
             raid.Enemies.Add(new EnemyRuntimeData(definition, secondaryStats, enemyMaxHp));
         }
 
-        raid.CurrentBattleStartIndex = 0;
+        GenerateBattleGroups(raid);
+    }
+
+    private void GenerateBattleGroups(RaidRuntimeData raid)
+    {
+        raid.BattleStartIndices.Clear();
+        raid.BattleEnemyCounts.Clear();
+
+        int startIndex = 0;
+
+        while (startIndex < raid.Enemies.Count)
+        {
+            int enemyCount = GetRandomBattleEnemyCount(raid.Enemies.Count - startIndex);
+            raid.BattleStartIndices.Add(startIndex);
+            raid.BattleEnemyCounts.Add(enemyCount);
+            startIndex += enemyCount;
+        }
+
         raid.CurrentBattleNumber = 1;
-        raid.BattleCount = Mathf.CeilToInt(raid.Enemies.Count / (float)_raidConfig.MaxEnemiesPerBattle);
+        raid.BattleCount = raid.BattleEnemyCounts.Count;
+        raid.CurrentBattleStartIndex = GetBattleStartIndex(raid, raid.CurrentBattleNumber);
+    }
+
+    private int GetRandomBattleEnemyCount(int remainingEnemies)
+    {
+        int minEnemiesPerBattle = Mathf.Max(1, _raidConfig.MinEnemiesPerBattle);
+        int maxEnemiesPerBattle = Mathf.Max(minEnemiesPerBattle, _raidConfig.MaxEnemiesPerBattle);
+        int minCount = Mathf.Min(minEnemiesPerBattle, remainingEnemies);
+        int maxCount = Mathf.Min(maxEnemiesPerBattle, remainingEnemies);
+        int validCountOptions = 0;
+
+        for (int count = minCount; count <= maxCount; count++)
+        {
+            int enemiesAfterBattle = remainingEnemies - count;
+
+            if (enemiesAfterBattle == 0 || enemiesAfterBattle >= minEnemiesPerBattle)
+            {
+                validCountOptions++;
+            }
+        }
+
+        if (validCountOptions <= 0)
+        {
+            return Random.Range(minCount, maxCount + 1);
+        }
+
+        int selectedOption = Random.Range(0, validCountOptions);
+
+        for (int count = minCount; count <= maxCount; count++)
+        {
+            int enemiesAfterBattle = remainingEnemies - count;
+
+            if (enemiesAfterBattle != 0 && enemiesAfterBattle < minEnemiesPerBattle)
+            {
+                continue;
+            }
+
+            if (selectedOption == 0)
+            {
+                return count;
+            }
+
+            selectedOption--;
+        }
+
+        return maxCount;
     }
 
     private void BuildRaidProgressTimeline(RaidRuntimeData raid)
@@ -300,8 +363,8 @@ public sealed class RaidSystem : MonoBehaviour
 
         for (int battleNumber = 1; battleNumber <= raid.BattleCount; battleNumber++)
         {
-            int battleStartIndex = (battleNumber - 1) * _raidConfig.MaxEnemiesPerBattle;
-            int battleEndIndex = Mathf.Min(battleStartIndex + _raidConfig.MaxEnemiesPerBattle, raid.Enemies.Count);
+            int battleStartIndex = GetBattleStartIndex(raid, battleNumber);
+            int battleEndIndex = GetBattleEndIndex(raid, battleNumber);
             AddProgressSegment(raid, EstimateBattleProgressSegmentSeconds(raid, battleStartIndex, battleEndIndex));
 
             AddProgressSegment(raid, _raidConfig.BattleTransitionDelaySeconds);
@@ -495,8 +558,7 @@ public sealed class RaidSystem : MonoBehaviour
     private void StartBattleTransitionOrCompleteRaid(RaidRuntimeData raid)
     {
         CompleteCurrentProgressSegment(raid);
-        int nextBattleStartIndex = raid.CurrentBattleStartIndex + _raidConfig.MaxEnemiesPerBattle;
-        raid.CompleteAfterLoot = nextBattleStartIndex >= raid.Enemies.Count;
+        raid.CompleteAfterLoot = raid.CurrentBattleNumber >= raid.BattleCount;
 
         raid.State = RaidState.BattleTransition;
         raid.BattleTransitionTimer = 0f;
@@ -536,8 +598,8 @@ public sealed class RaidSystem : MonoBehaviour
     private void AdvanceToNextBattle(RaidRuntimeData raid)
     {
         raid.State = RaidState.InProgress;
-        raid.CurrentBattleStartIndex += _raidConfig.MaxEnemiesPerBattle;
         raid.CurrentBattleNumber++;
+        raid.CurrentBattleStartIndex = GetBattleStartIndex(raid, raid.CurrentBattleNumber);
         raid.OrcAttackProgress = 0f;
         raid.BattleTransitionTimer = 0f;
         raid.CompleteAfterLoot = false;
@@ -832,7 +894,35 @@ public sealed class RaidSystem : MonoBehaviour
 
     private int GetCurrentBattleEndIndex(RaidRuntimeData raid)
     {
-        return Mathf.Min(raid.CurrentBattleStartIndex + _raidConfig.MaxEnemiesPerBattle, raid.Enemies.Count);
+        return GetBattleEndIndex(raid, raid.CurrentBattleNumber);
+    }
+
+    private int GetBattleStartIndex(RaidRuntimeData raid, int battleNumber)
+    {
+        if (raid.BattleStartIndices.Count == 0)
+        {
+            return 0;
+        }
+
+        int battleIndex = Mathf.Clamp(battleNumber - 1, 0, raid.BattleStartIndices.Count - 1);
+        return raid.BattleStartIndices[battleIndex];
+    }
+
+    private int GetBattleEnemyCount(RaidRuntimeData raid, int battleNumber)
+    {
+        if (raid.BattleEnemyCounts.Count == 0)
+        {
+            return 0;
+        }
+
+        int battleIndex = Mathf.Clamp(battleNumber - 1, 0, raid.BattleEnemyCounts.Count - 1);
+        return raid.BattleEnemyCounts[battleIndex];
+    }
+
+    private int GetBattleEndIndex(RaidRuntimeData raid, int battleNumber)
+    {
+        int startIndex = GetBattleStartIndex(raid, battleNumber);
+        return Mathf.Min(startIndex + GetBattleEnemyCount(raid, battleNumber), raid.Enemies.Count);
     }
 
     private enum RaidState
@@ -849,6 +939,8 @@ public sealed class RaidSystem : MonoBehaviour
         public readonly RaidPanelView Panel;
         public readonly int LayoutSlot;
         public readonly List<EnemyRuntimeData> Enemies = new List<EnemyRuntimeData>();
+        public readonly List<int> BattleStartIndices = new List<int>();
+        public readonly List<int> BattleEnemyCounts = new List<int>();
         public readonly List<float> ProgressSegmentDurations = new List<float>();
 
         public RaidState State;
