@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "Orc Birth", menuName = "GAME/Orc Birth")]
 public sealed class OrcBirthConfig : ScriptableObject
@@ -13,7 +12,6 @@ public sealed class OrcBirthConfig : ScriptableObject
     [SerializeField] private StatsConfig _statsConfig = null;
 
     [Header("Orc")]
-    [SerializeField, FormerlySerializedAs("_minimumHealthAfterBirth"), Min(1)] private int _minimumEnduranceAfterBirth = 1;
     [SerializeField] private Vector2 _firstOrcSpawnPosition = new Vector2(-5.5f, -1.7f);
     [SerializeField] private Vector2 _orcSpawnSpacing = new Vector2(1.45f, 0f);
     [SerializeField, Min(1)] private int _maxOrcsPerRow = 6;
@@ -21,7 +19,6 @@ public sealed class OrcBirthConfig : ScriptableObject
     public int RequiredDiceCount => _requiredDiceCount;
     public DiceConfig DiceConfig => _diceConfig;
     public StatsConfig StatsConfig => _statsConfig;
-    public int MinimumEnduranceAfterBirth => _minimumEnduranceAfterBirth;
     public Vector2 FirstOrcSpawnPosition => _firstOrcSpawnPosition;
     public Vector2 OrcSpawnSpacing => _orcSpawnSpacing;
     public int MaxOrcsPerRow => _maxOrcsPerRow;
@@ -48,6 +45,19 @@ public sealed class OrcStats
     public int Strength => _strength;
     public int Agility => _agility;
     public int Intelligence => _intelligence;
+
+    public void SetToMinimums(StatsConfig statsConfig)
+    {
+        if (statsConfig == null)
+        {
+            return;
+        }
+
+        _endurance = statsConfig.GetPrimaryStatMinimumValue(OrcStatType.Endurance);
+        _strength = statsConfig.GetPrimaryStatMinimumValue(OrcStatType.Strength);
+        _agility = statsConfig.GetPrimaryStatMinimumValue(OrcStatType.Agility);
+        _intelligence = statsConfig.GetPrimaryStatMinimumValue(OrcStatType.Intelligence);
+    }
 
     public void Apply(DiceFaceDefinition face)
     {
@@ -79,21 +89,14 @@ public sealed class OrcStats
         }
     }
 
-    public void ClampAfterBirth(int minimumEndurance, StatsConfig statsConfig)
+    public void ClampAfterBirth(StatsConfig statsConfig)
     {
         if (statsConfig != null)
         {
-            _endurance = statsConfig.ClampPrimaryStat(_endurance);
-            _strength = statsConfig.ClampPrimaryStat(_strength);
-            _agility = statsConfig.ClampPrimaryStat(_agility);
-            _intelligence = statsConfig.ClampPrimaryStat(_intelligence);
-        }
-
-        _endurance = Mathf.Max(minimumEndurance, _endurance);
-
-        if (statsConfig != null)
-        {
-            _endurance = statsConfig.ClampPrimaryStat(_endurance);
+            _endurance = statsConfig.ClampPrimaryStat(OrcStatType.Endurance, _endurance);
+            _strength = statsConfig.ClampPrimaryStat(OrcStatType.Strength, _strength);
+            _agility = statsConfig.ClampPrimaryStat(OrcStatType.Agility, _agility);
+            _intelligence = statsConfig.ClampPrimaryStat(OrcStatType.Intelligence, _intelligence);
         }
     }
 

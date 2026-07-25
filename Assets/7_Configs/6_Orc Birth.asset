@@ -15,7 +15,6 @@ MonoBehaviour:
   _requiredDiceCount: 6
   _diceConfig: {fileID: 11400000, guid: e0b719f07e2a4f7db1bbf54472456a21, type: 2}
   _statsConfig: {fileID: 11400000, guid: 24170c34a08f4843bdd2ca6c88a02000, type: 2}
-  _minimumEnduranceAfterBirth: 1
   _firstOrcSpawnPosition: {x: -5.5, y: -1.7}
   _orcSpawnSpacing: {x: 1.45, y: 0}
   _maxOrcsPerRow: 6

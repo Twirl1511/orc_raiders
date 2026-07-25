@@ -13,49 +13,61 @@ MonoBehaviour:
   m_Name: 8_Stats
   m_EditorClassIdentifier: Assembly-CSharp::StatsConfig
   _maxPrimaryStatValue: 20
+  _attackIntervalSeconds: 1
+  _damageBlockPercentPerArmor: 3.75
+  _maxDamageBlockPercent: 75
   _primaryStats:
   - _statType: 1
     _displayName: "Выносливость"
+    _minimumValue: 1
     _description: "Основной стат. Влияет на здоровье."
   - _statType: 2
     _displayName: "Сила"
+    _minimumValue: 1
     _description: "Основной стат. Влияет на урон в ближнем бою."
   - _statType: 3
     _displayName: "Ловкость"
+    _minimumValue: 1
     _description: "Основной стат. Влияет на скорость атаки, урон в дальнем бою и уклонение."
   - _statType: 4
     _displayName: "Интеллект"
+    _minimumValue: 1
     _description: "Основной стат. Влияет на шанс найти больше лута."
   _secondaryStats:
   - _statType: 3
     _displayName: "Здоровье"
     _valueSuffix: " HP"
-    _showInOrcInfo: 1
+    _minimumValue: 10
     _description: "Вторичный стат. Сейчас считается от выносливости."
   - _statType: 2
     _displayName: "Урон в ближнем бою"
     _valueSuffix: ""
-    _showInOrcInfo: 1
+    _minimumValue: 1
     _description: "Вторичный стат. Сейчас считается от силы."
   - _statType: 4
     _displayName: "Урон в дальнем бою"
     _valueSuffix: ""
-    _showInOrcInfo: 1
+    _minimumValue: 1
     _description: "Вторичный стат. Сейчас считается от ловкости."
   - _statType: 1
     _displayName: "Скорость атаки"
-    _valueSuffix: "%"
-    _showInOrcInfo: 1
-    _description: "Вторичный стат. Сейчас считается от ловкости."
+    _valueSuffix: " сек."
+    _minimumValue: 0
+    _description: "Вторичный стат. Показывает, за сколько секунд делается одна атака. Базовое значение берется из _attackIntervalSeconds."
+  - _statType: 7
+    _displayName: "Броня"
+    _valueSuffix: ""
+    _minimumValue: 0
+    _description: "Вторичный стат. Сейчас базовое значение, позже будет считаться от предметов."
   - _statType: 5
     _displayName: "Шанс найти больше лута"
     _valueSuffix: "%"
-    _showInOrcInfo: 0
+    _minimumValue: 0
     _description: "Вторичный стат. Сейчас считается от интеллекта."
   - _statType: 6
     _displayName: "Уклонение"
     _valueSuffix: "%"
-    _showInOrcInfo: 0
+    _minimumValue: 0
     _description: "Вторичный стат. Сейчас считается от ловкости."
   _scalingRules:
   - _sourceStat: 1
@@ -70,9 +82,9 @@ MonoBehaviour:
     _description: "1 сила = +1 к урону в ближнем бою."
   - _sourceStat: 3
     _targetStat: 1
-    _mode: 1
-    _valuePerPoint: 1
-    _description: "1 ловкость = +1% к скорости атаки."
+    _mode: 0
+    _valuePerPoint: -0.03
+    _description: "1 ловкость = -0.03 секунды к времени одной атаки."
   - _sourceStat: 3
     _targetStat: 4
     _mode: 0

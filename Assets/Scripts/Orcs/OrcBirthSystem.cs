@@ -220,6 +220,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
 
         OrcStats stats = new OrcStats();
+        stats.SetToMinimums(_config.StatsConfig);
         List<string> rollTexts = new List<string>();
 
         for (int i = 0; i < _selectedDice.Count; i++)
@@ -230,7 +231,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
             rollTexts.Add($"{dice.DisplayName}: {face.GetDisplayText()}");
         }
 
-        stats.ClampAfterBirth(_config.MinimumEnduranceAfterBirth, _config.StatsConfig);
+        stats.ClampAfterBirth(_config.StatsConfig);
 
         OrcRuntimeData orcData = new OrcRuntimeData($"Орк {_nextOrcId}", stats, rollTexts);
         SpawnOrc(orcData);
