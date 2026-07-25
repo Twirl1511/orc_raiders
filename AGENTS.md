@@ -40,7 +40,9 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 
 - Keep scripts small and readable. A prototype script may be pragmatic, but it should still be easy to delete, replace, or extend.
 - Use clear names that describe gameplay intent.
-- Prefer serialized references over runtime `FindObjectOfType`/name searches for scene-critical dependencies.
+- Do not use scene-wide object searches such as `FindObjectOfType`, `FindObjectsByType`, `GameObject.Find`, or broad name searches for scene dependencies.
+- Wire scene dependencies through serialized references, explicit config/provider objects, or narrow singleton/static entry points.
+- If a required scene object such as `EventSystem` is missing, log an error and fix the scene setup instead of creating it from runtime code.
 - Keep gameplay tuning data in named config assets. Use component `[SerializeField]` fields mainly for object references, local presentation settings, and links to configs.
 - Group related numbers into focused configs such as unit stats, wave settings, economy, skills, rewards, UI balance, and difficulty curves.
 - Make configs easy to duplicate and compare so different mechanic variants can be tested quickly.
@@ -65,6 +67,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - When creating buildings, use simple white 2D sprites with text inside the sprite that says what the building is.
 - When creating units, use simple white 2D sprites with a text label above the unit that says what the unit is.
 - Keep these placeholder visuals clean, readable, and easy to replace later.
+- For world objects such as buildings and units, keep the parent object as a clean container. Put the visual sprite on a separate child and the collider on a separate child so sizes can be edited without changing the parent scale.
 
 ## Gameplay Implementation
 

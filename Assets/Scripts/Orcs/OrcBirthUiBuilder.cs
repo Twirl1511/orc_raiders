@@ -39,7 +39,6 @@ public readonly struct OrcBirthUiReferences
 public static class OrcBirthUiBuilder
 {
     private const string _canvasName = "Orc Birth UI";
-    private const string _eventSystemName = "EventSystem";
 
     public static OrcBirthUiReferences Ensure(Transform parent, int requiredDiceCount, out bool changed)
     {
@@ -98,19 +97,17 @@ public static class OrcBirthUiBuilder
         return new OrcBirthUiReferences(canvas, availableDiceRoot, selectedDiceRoot, diceButtonTemplate, selectedDiceLabel, statusText, orcInfoText, createOrcButton);
     }
 
-    public static void EnsureEventSystem()
+    public static void ValidateEventSystem(EventSystem eventSystem)
     {
-        EventSystem eventSystem = EventSystem.current;
-
         if (eventSystem == null)
         {
-            GameObject eventSystemObject = new GameObject(_eventSystemName);
-            eventSystem = eventSystemObject.AddComponent<EventSystem>();
+            Debug.LogError("GameScene requires an EventSystem assigned in the scene. Add one manually and wire it to GameSceneBootstrap.");
+            return;
         }
 
         if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
         {
-            eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+            Debug.LogError("GameScene EventSystem requires InputSystemUIInputModule. Add it manually on the EventSystem object.");
         }
     }
 
@@ -277,4 +274,5 @@ public static class OrcBirthUiBuilder
         changed = true;
         return gameObject.AddComponent<T>();
     }
+
 }

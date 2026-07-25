@@ -118,7 +118,6 @@ public sealed class OrcBirthSystem : MonoBehaviour
         _createOrcButton.onClick.AddListener(CreateOrc);
 
         CreateInitialDicePool();
-        OrcBirthUiBuilder.EnsureEventSystem();
         ResetInfoText();
         RefreshUi();
     }

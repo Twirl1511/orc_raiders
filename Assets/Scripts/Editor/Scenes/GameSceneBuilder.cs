@@ -10,6 +10,7 @@ public static class GameSceneBuilder
     private const string _scenePath = "Assets/Scenes/GameScene.unity";
     private const string _prototypeArtFolder = "Assets/Art/Prototype";
     private const string _whiteSpritePath = "Assets/Art/Prototype/WhiteSquare.png";
+    private static readonly Vector2 _cauldronSize = new Vector2(2.6f, 1.8f);
 
     [MenuItem("Tools/Scenes/Create Game Scene")]
     public static void CreateGameScene()
@@ -24,7 +25,7 @@ public static class GameSceneBuilder
         CreateCauldron(whiteSprite);
         OrcBirthUiReferences uiReferences = CreateOrcBirthUi(orcBirthConfig);
         CreateOrcBirthSystem(orcBirthConfig, sceneCamera, uiReferences);
-        OrcBirthUiBuilder.EnsureEventSystem();
+        Debug.LogError("GameScene requires a manually placed EventSystem with InputSystemUIInputModule. Add it to the scene and wire any scene-level references.");
 
         EditorSceneManager.SaveScene(scene, _scenePath);
         AddSceneToBuildSettings();
@@ -81,20 +82,34 @@ public static class GameSceneBuilder
     {
         GameObject cauldron = new GameObject("Cauldron");
         cauldron.transform.position = new Vector3(0f, -1.65f, 0f);
-        cauldron.transform.localScale = new Vector3(2.6f, 1.8f, 1f);
+        cauldron.transform.localScale = Vector3.one;
 
-        SpriteRenderer renderer = cauldron.AddComponent<SpriteRenderer>();
+        GameObject spriteObject = new GameObject("Sprite");
+        spriteObject.transform.SetParent(cauldron.transform, false);
+        spriteObject.transform.localPosition = Vector3.zero;
+        spriteObject.transform.localRotation = Quaternion.identity;
+        spriteObject.transform.localScale = Vector3.one;
+
+        SpriteRenderer renderer = spriteObject.AddComponent<SpriteRenderer>();
         renderer.sprite = whiteSprite;
         renderer.color = Color.white;
         renderer.sortingOrder = 5;
+        renderer.drawMode = SpriteDrawMode.Sliced;
+        renderer.size = _cauldronSize;
 
-        BoxCollider2D collider = cauldron.AddComponent<BoxCollider2D>();
-        collider.size = Vector2.one;
+        GameObject colliderObject = new GameObject("Collider");
+        colliderObject.transform.SetParent(cauldron.transform, false);
+        colliderObject.transform.localPosition = Vector3.zero;
+        colliderObject.transform.localRotation = Quaternion.identity;
+        colliderObject.transform.localScale = Vector3.one;
+
+        BoxCollider2D collider = colliderObject.AddComponent<BoxCollider2D>();
+        collider.size = _cauldronSize;
 
         GameObject labelObject = new GameObject("Label");
         labelObject.transform.SetParent(cauldron.transform, false);
         labelObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
-        labelObject.transform.localScale = new Vector3(0.4f, 0.55f, 1f);
+        labelObject.transform.localScale = Vector3.one;
 
         TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
         label.text = "КОТЕЛ";
@@ -103,7 +118,7 @@ public static class GameSceneBuilder
         label.alignment = TextAlignmentOptions.Center;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.sortingOrder = 10;
-        label.rectTransform.sizeDelta = new Vector2(5f, 2f);
+        label.rectTransform.sizeDelta = new Vector2(2.4f, 1.4f);
     }
 
     private static Sprite GetOrCreateWhiteSprite()
@@ -133,7 +148,7 @@ public static class GameSceneBuilder
         if (importer != null)
         {
             importer.textureType = TextureImporterType.Sprite;
-            importer.spritePixelsPerUnit = 100f;
+            importer.spritePixelsPerUnit = 16f;
             importer.mipmapEnabled = false;
             importer.filterMode = FilterMode.Point;
             importer.SaveAndReimport();
