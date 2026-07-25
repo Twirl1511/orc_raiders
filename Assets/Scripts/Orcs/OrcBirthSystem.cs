@@ -10,6 +10,13 @@ public sealed class OrcBirthSystem : MonoBehaviour
     private const int _orcInfoHpBarCells = 14;
     private const char _filledHpCell = '#';
     private const char _emptyHpCell = '-';
+    private static readonly Vector2 _primaryStatUpgradeButtonSize = new Vector2(20f, 18f);
+    private static readonly Color _selectedOrcOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
+    private static readonly Vector2 _selectedOrcOutlinePadding = new Vector2(0.14f, 0.14f);
+    private const float _orcLabelScale = 0.25f;
+    private const float _primaryStatUpgradeButtonXRatio = 0.37f;
+    private const int _primaryStatLineIndexWithoutFreeStats = 4;
+    private const int _primaryStatLineIndexWithFreeStats = 5;
 
     [Header("Config")]
     [SerializeField] private OrcBirthConfig _config = null;
@@ -43,6 +50,9 @@ public sealed class OrcBirthSystem : MonoBehaviour
     private readonly List<GameObject> _runtimeDiceButtons = new List<GameObject>();
     private readonly List<OrcRuntimeData> _orcs = new List<OrcRuntimeData>();
     private readonly Dictionary<GameObject, OrcRuntimeData> _orcDataByObject = new Dictionary<GameObject, OrcRuntimeData>();
+    private readonly Dictionary<OrcRuntimeData, GameObject> _selectionOutlineByOrc = new Dictionary<OrcRuntimeData, GameObject>();
+    private readonly Dictionary<OrcRuntimeData, OrcMapHealthBar> _healthBarByOrc = new Dictionary<OrcRuntimeData, OrcMapHealthBar>();
+    private readonly Dictionary<OrcRuntimeData, OrcMapVisual> _mapVisualByOrc = new Dictionary<OrcRuntimeData, OrcMapVisual>();
     private readonly Dictionary<OrcRuntimeData, float> _restHealTimers = new Dictionary<OrcRuntimeData, float>();
 
     private Sprite _whiteSprite;
@@ -136,8 +146,15 @@ public sealed class OrcBirthSystem : MonoBehaviour
             return;
         }
 
+        int levelBefore = orcData.Level;
         orcData.AddExperience(amount, _config.LevelUpConfig, _config.StatsConfig);
         orcData.SetMaxHp(CalculateOrcMaxHp(orcData.Stats), false);
+        if (orcData.Level != levelBefore)
+        {
+            RefreshOrcMapVisualSize(orcData);
+        }
+
+        RefreshOrcHealthBar(orcData);
 
         if (_selectedOrc == orcData)
         {
@@ -457,7 +474,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void SpawnOrc(OrcRuntimeData orcData)
     {
-        Vector2 visualSize = _config.OrcVisualSize;
+        Vector2 visualSize = _config.GetOrcVisualSizeForLevel(orcData.Level);
         GameObject orcObject = new GameObject(orcData.Name);
         orcObject.transform.SetParent(transform, false);
         orcObject.transform.localScale = Vector3.one;
@@ -478,11 +495,16 @@ public sealed class OrcBirthSystem : MonoBehaviour
         BoxCollider2D collider = colliderObject.AddComponent<BoxCollider2D>();
         collider.size = visualSize;
 
-        CreateOrcLabel(orcObject.transform, orcData.Name, visualSize);
+        GameObject selectionOutline = CreateOrcSelectionOutline(orcObject.transform, visualSize);
+        OrcMapHealthBar healthBar = CreateOrcHealthBar(orcObject.transform, visualSize);
+        TextMeshPro label = CreateOrcLabel(orcObject.transform, orcData.Name, visualSize);
         orcData.SetMapPosition(GetDefaultOrcPositionForState(orcData, OrcActivityState.OnBase));
         _orcs.Add(orcData);
         orcData.AttachView(orcObject);
         _orcDataByObject.Add(colliderObject, orcData);
+        _selectionOutlineByOrc.Add(orcData, selectionOutline);
+        _healthBarByOrc.Add(orcData, healthBar);
+        _mapVisualByOrc.Add(orcData, new OrcMapVisual(renderer, collider, selectionOutline.GetComponent<SpriteRenderer>(), label, healthBar));
         RefreshOrcVisualStates();
     }
 
@@ -504,6 +526,14 @@ public sealed class OrcBirthSystem : MonoBehaviour
             {
                 orcData.ViewObject.transform.position = orcData.MapPosition;
             }
+
+            if (_selectionOutlineByOrc.TryGetValue(orcData, out GameObject selectionOutline) &&
+                selectionOutline != null)
+            {
+                selectionOutline.SetActive(isVisible && orcData == _selectedOrc);
+            }
+
+            RefreshOrcHealthBar(orcData);
         }
     }
 
@@ -535,14 +565,12 @@ public sealed class OrcBirthSystem : MonoBehaviour
         return firstPosition + new Vector2(spacing.x * column, spacing.y - row * 1.2f);
     }
 
-    private void CreateOrcLabel(Transform parent, string text, Vector2 visualSize)
+    private TextMeshPro CreateOrcLabel(Transform parent, string text, Vector2 visualSize)
     {
-        const float labelScale = 0.25f;
-
         GameObject labelObject = new GameObject("Label");
         labelObject.transform.SetParent(parent, false);
         labelObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
-        labelObject.transform.localScale = new Vector3(labelScale, labelScale, 1f);
+        labelObject.transform.localScale = new Vector3(_orcLabelScale, _orcLabelScale, 1f);
 
         TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
         label.text = text;
@@ -555,12 +583,103 @@ public sealed class OrcBirthSystem : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.overflowMode = TextOverflowModes.Ellipsis;
         label.sortingOrder = _config.OrcLabelSortingOrder;
-        label.rectTransform.sizeDelta = new Vector2(visualSize.x * 0.92f / labelScale, visualSize.y * 0.9f / labelScale);
+        label.rectTransform.sizeDelta = GetOrcLabelRectSize(visualSize);
+        return label;
+    }
+
+    private GameObject CreateOrcSelectionOutline(Transform parent, Vector2 visualSize)
+    {
+        GameObject outlineObject = new GameObject("Selection Outline");
+        outlineObject.transform.SetParent(parent, false);
+
+        SpriteRenderer renderer = outlineObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = _whiteSprite;
+        renderer.drawMode = SpriteDrawMode.Sliced;
+        renderer.size = visualSize + _selectedOrcOutlinePadding;
+        renderer.color = _selectedOrcOutlineColor;
+        renderer.sortingOrder = _config.OrcSpriteSortingOrder - 1;
+
+        outlineObject.SetActive(false);
+        return outlineObject;
+    }
+
+    private OrcMapHealthBar CreateOrcHealthBar(Transform parent, Vector2 visualSize)
+    {
+        Vector2 barSize = GetOrcHealthBarSize(visualSize);
+        Vector3 barPosition = GetOrcHealthBarPosition(visualSize);
+
+        GameObject rootObject = new GameObject("HP Bar");
+        rootObject.transform.SetParent(parent, false);
+        rootObject.transform.localPosition = barPosition;
+
+        GameObject backgroundObject = new GameObject("Background");
+        backgroundObject.transform.SetParent(rootObject.transform, false);
+
+        SpriteRenderer background = backgroundObject.AddComponent<SpriteRenderer>();
+        background.sprite = _whiteSprite;
+        background.drawMode = SpriteDrawMode.Sliced;
+        background.size = barSize;
+        background.color = new Color(0.09f, 0.1f, 0.11f, 1f);
+        background.sortingOrder = _config.OrcLabelSortingOrder + 1;
+
+        GameObject fillObject = new GameObject("Fill");
+        fillObject.transform.SetParent(rootObject.transform, false);
+
+        SpriteRenderer fill = fillObject.AddComponent<SpriteRenderer>();
+        fill.sprite = _whiteSprite;
+        fill.drawMode = SpriteDrawMode.Sliced;
+        fill.size = barSize;
+        fill.color = new Color(0.42f, 0.9f, 0.42f, 1f);
+        fill.sortingOrder = _config.OrcLabelSortingOrder + 2;
+
+        return new OrcMapHealthBar(rootObject, background, fill, barSize);
+    }
+
+    private void RefreshOrcMapVisualSize(OrcRuntimeData orcData)
+    {
+        if (orcData == null || !_mapVisualByOrc.TryGetValue(orcData, out OrcMapVisual mapVisual))
+        {
+            return;
+        }
+
+        mapVisual.SetSize(_config.GetOrcVisualSizeForLevel(orcData.Level), _selectedOrcOutlinePadding);
+    }
+
+    private static Vector2 GetOrcLabelRectSize(Vector2 visualSize)
+    {
+        return new Vector2(visualSize.x * 0.92f / _orcLabelScale, visualSize.y * 0.9f / _orcLabelScale);
+    }
+
+    private static Vector2 GetOrcHealthBarSize(Vector2 visualSize)
+    {
+        return new Vector2(visualSize.x * 0.9f, 0.08f);
+    }
+
+    private static Vector3 GetOrcHealthBarPosition(Vector2 visualSize)
+    {
+        return new Vector3(0f, visualSize.y * 0.5f + 0.16f, -0.1f);
+    }
+
+    private void RefreshOrcHealthBar(OrcRuntimeData orcData)
+    {
+        if (orcData == null || !_healthBarByOrc.TryGetValue(orcData, out OrcMapHealthBar healthBar))
+        {
+            return;
+        }
+
+        bool isVisible = orcData.State != OrcActivityState.InRaid;
+        healthBar.SetVisible(isVisible);
+
+        if (isVisible)
+        {
+            healthBar.SetHealth(orcData.CurrentHp, orcData.MaxHp);
+        }
     }
 
     private void ShowOrcInfo(OrcRuntimeData orcData)
     {
         _selectedOrc = orcData;
+        RefreshOrcVisualStates();
         _orcInfoTitle.text = orcData.Name;
         string freeStatsLine = orcData.FreePrimaryStatPoints > 0
             ? $"Свободные статы: {orcData.FreePrimaryStatPoints}\n"
@@ -650,10 +769,55 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void RefreshPrimaryStatUpgradeButtons(OrcRuntimeData orcData)
     {
+        _orcInfoText.ForceMeshUpdate();
+
+        PositionPrimaryStatUpgradeButton(_enduranceUpgradeButton, orcData, 0);
+        PositionPrimaryStatUpgradeButton(_strengthUpgradeButton, orcData, 1);
+        PositionPrimaryStatUpgradeButton(_agilityUpgradeButton, orcData, 2);
+        PositionPrimaryStatUpgradeButton(_intelligenceUpgradeButton, orcData, 3);
+
         RefreshPrimaryStatUpgradeButton(_enduranceUpgradeButton, orcData, OrcStatType.Endurance);
         RefreshPrimaryStatUpgradeButton(_strengthUpgradeButton, orcData, OrcStatType.Strength);
         RefreshPrimaryStatUpgradeButton(_agilityUpgradeButton, orcData, OrcStatType.Agility);
         RefreshPrimaryStatUpgradeButton(_intelligenceUpgradeButton, orcData, OrcStatType.Intelligence);
+    }
+
+    private void PositionPrimaryStatUpgradeButton(Button button, OrcRuntimeData orcData, int rowIndex)
+    {
+        if (button == null || _orcInfoText == null)
+        {
+            return;
+        }
+
+        RectTransform rectTransform = button.transform as RectTransform;
+
+        if (rectTransform == null)
+        {
+            return;
+        }
+
+        RectTransform textRectTransform = _orcInfoText.rectTransform;
+        rectTransform.SetParent(textRectTransform, false);
+        rectTransform.anchorMin = new Vector2(0f, 1f);
+        rectTransform.anchorMax = new Vector2(0f, 1f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.sizeDelta = _primaryStatUpgradeButtonSize;
+
+        TMP_TextInfo textInfo = _orcInfoText.textInfo;
+        int primaryStatLineIndex = (orcData != null && orcData.FreePrimaryStatPoints > 0
+            ? _primaryStatLineIndexWithFreeStats
+            : _primaryStatLineIndexWithoutFreeStats) + rowIndex;
+
+        if (primaryStatLineIndex < 0 || primaryStatLineIndex >= textInfo.lineCount)
+        {
+            return;
+        }
+
+        TMP_LineInfo lineInfo = textInfo.lineInfo[primaryStatLineIndex];
+        Rect textRect = textRectTransform.rect;
+        float x = textRect.width * _primaryStatUpgradeButtonXRatio;
+        float y = ((lineInfo.ascender + lineInfo.descender) * 0.5f) - textRect.yMax;
+        rectTransform.anchoredPosition = new Vector2(x, y);
     }
 
     private void RefreshPrimaryStatUpgradeButton(Button button, OrcRuntimeData orcData, OrcStatType statType)
@@ -696,6 +860,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
 
         _selectedOrc.SetMaxHp(CalculateOrcMaxHp(_selectedOrc.Stats), false);
+        RefreshOrcHealthBar(_selectedOrc);
         _raidSystem.RefreshOrcCombatStats(_selectedOrc);
         ShowOrcInfo(_selectedOrc);
     }
@@ -736,6 +901,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
             {
                 timer -= tickSeconds;
                 orcData.Heal(healAmount);
+                RefreshOrcHealthBar(orcData);
                 healed = true;
             }
 
@@ -812,6 +978,106 @@ public sealed class OrcBirthSystem : MonoBehaviour
         public DiceRuntimeData(DiceDefinition definition)
         {
             Definition = definition;
+        }
+    }
+
+    private sealed class OrcMapVisual
+    {
+        private readonly SpriteRenderer _spriteRenderer;
+        private readonly BoxCollider2D _collider;
+        private readonly SpriteRenderer _selectionOutline;
+        private readonly TextMeshPro _label;
+        private readonly OrcMapHealthBar _healthBar;
+
+        public OrcMapVisual(
+            SpriteRenderer spriteRenderer,
+            BoxCollider2D collider,
+            SpriteRenderer selectionOutline,
+            TextMeshPro label,
+            OrcMapHealthBar healthBar)
+        {
+            _spriteRenderer = spriteRenderer;
+            _collider = collider;
+            _selectionOutline = selectionOutline;
+            _label = label;
+            _healthBar = healthBar;
+        }
+
+        public void SetSize(Vector2 visualSize, Vector2 outlinePadding)
+        {
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.size = visualSize;
+            }
+
+            if (_collider != null)
+            {
+                _collider.size = visualSize;
+            }
+
+            if (_selectionOutline != null)
+            {
+                _selectionOutline.size = visualSize + outlinePadding;
+            }
+
+            if (_label != null)
+            {
+                _label.rectTransform.sizeDelta = GetOrcLabelRectSize(visualSize);
+            }
+
+            _healthBar?.SetSize(GetOrcHealthBarSize(visualSize), GetOrcHealthBarPosition(visualSize));
+        }
+    }
+
+    private sealed class OrcMapHealthBar
+    {
+        private readonly GameObject _rootObject;
+        private readonly SpriteRenderer _background;
+        private readonly SpriteRenderer _fill;
+        private Vector2 _size;
+
+        public OrcMapHealthBar(GameObject rootObject, SpriteRenderer background, SpriteRenderer fill, Vector2 size)
+        {
+            _rootObject = rootObject;
+            _background = background;
+            _fill = fill;
+            _size = size;
+        }
+
+        public void SetVisible(bool visible)
+        {
+            if (_rootObject != null)
+            {
+                _rootObject.SetActive(visible);
+            }
+        }
+
+        public void SetHealth(float currentHp, float maxHp)
+        {
+            if (_fill == null)
+            {
+                return;
+            }
+
+            float ratio = maxHp <= 0f ? 0f : Mathf.Clamp01(currentHp / maxHp);
+            float fillWidth = _size.x * ratio;
+            _fill.size = new Vector2(fillWidth, _size.y);
+            _fill.transform.localPosition = new Vector3((-_size.x + fillWidth) * 0.5f, 0f, 0f);
+        }
+
+        public void SetSize(Vector2 size, Vector3 localPosition)
+        {
+            _size = size;
+
+            if (_rootObject != null)
+            {
+                _rootObject.transform.localPosition = localPosition;
+            }
+
+            if (_background != null)
+            {
+                _background.size = size;
+            }
         }
     }
 }

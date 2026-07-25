@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RaidConfig
   _startingRaidCount: 1
   _newRaidIntervalSeconds: 60
+  _useManualRaidSpawnButton: 1
+  _waitingRaidLifetimeSeconds: 60
   _minGoldReward: 10
   _maxGoldReward: 35
   _minEnemies: 3
   _maxEnemies: 10
   _maxEnemiesPerBattle: 2
-  _battleTransitionDelaySeconds: 1.5
+  _battleTransitionDelaySeconds: 2

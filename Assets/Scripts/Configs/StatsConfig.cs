@@ -6,8 +6,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Stats", menuName = "GAME/Stats")]
 public sealed class StatsConfig : ScriptableObject
 {
-    private const string _primaryValuePosition = "34%";
-    private const string _primaryBarPosition = "48%";
+    private const string _primaryValuePosition = "42%";
+    private const string _primaryBarPosition = "55%";
     private const string _primaryBarCellWidth = "0.55em";
     private const char _filledPrimaryStatCell = '■';
     private const char _emptyPrimaryStatCell = '□';

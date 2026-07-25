@@ -20,6 +20,7 @@ public sealed class RaidPanelView : MonoBehaviour
     private Image _orcAttackFill;
     private RectTransform _orcHpBarRoot;
     private RectTransform _enemyRowsRoot;
+    private TextMeshProUGUI _enemyAreaMessage;
     private TextMeshProUGUI _logText;
     private TextMeshProUGUI _raidProgressText;
     private Image _raidProgressFill;
@@ -64,17 +65,18 @@ public sealed class RaidPanelView : MonoBehaviour
         _root.anchoredPosition = anchoredPosition;
     }
 
-    public void ShowWaiting(int raidNumber, float waitingSeconds)
+    public void ShowWaiting(int raidNumber, float remainingSeconds)
     {
         BuildIfNeeded();
         _titleText.text = $"Рейд {raidNumber}";
-        _statusText.text = "Ожидает орка";
-        _timerText.text = FormatTimer(waitingSeconds);
+        _statusText.text = "Исчезнет через";
+        _timerText.text = FormatTimer(remainingSeconds);
         _orcNameText.text = "Перетащи орка сюда";
         SetBarFill(_orcHpFill, 0f);
         SetBarFill(_orcAttackFill, 0f);
-        SetRaidProgress(0, 0);
+        SetRaidProgress(0, 0, 0f);
         ClearEnemies();
+        HideEnemyAreaMessage();
         _logText.text = "Ожидание";
         _closeButton.gameObject.SetActive(false);
     }
@@ -89,7 +91,9 @@ public sealed class RaidPanelView : MonoBehaviour
         float orcAttackProgress,
         int killedEnemies,
         int totalEnemies,
+        float raidProgress,
         int goldFound,
+        int experienceGained,
         IReadOnlyList<RaidEnemyViewData> enemies)
     {
         BuildIfNeeded();
@@ -99,9 +103,10 @@ public sealed class RaidPanelView : MonoBehaviour
         _orcNameText.text = $"{orcName}  {Mathf.CeilToInt(orcHp)}/{Mathf.CeilToInt(orcMaxHp)} HP";
         SetBarFill(_orcHpFill, GetRatio(orcHp, orcMaxHp));
         SetBarFill(_orcAttackFill, orcAttackProgress);
-        SetRaidProgress(killedEnemies, totalEnemies);
+        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         SetEnemies(enemies);
-        _logText.text = $"Золото найдено: {goldFound}";
+        HideEnemyAreaMessage();
+        SetRaidStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
     }
 
@@ -112,33 +117,37 @@ public sealed class RaidPanelView : MonoBehaviour
         string orcName,
         float orcHp,
         float orcMaxHp,
-        float transitionProgress,
+        float raidProgress,
         int killedEnemies,
         int totalEnemies,
-        int goldFound)
+        bool completeAfterLoot,
+        int goldFound,
+        int experienceGained)
     {
         BuildIfNeeded();
         _titleText.text = $"Рейд {raidNumber}";
-        _statusText.text = $"К группе {nextBattleNumber}/{battleCount}";
+        _statusText.text = completeAfterLoot ? "Собирает лут" : $"К группе {nextBattleNumber}/{battleCount}";
         _timerText.text = "";
         _orcNameText.text = $"{orcName}  {Mathf.CeilToInt(orcHp)}/{Mathf.CeilToInt(orcMaxHp)} HP";
         SetBarFill(_orcHpFill, GetRatio(orcHp, orcMaxHp));
         SetBarFill(_orcAttackFill, 0f);
-        SetTransitionProgress(transitionProgress);
+        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         ClearEnemies();
-        _logText.text = $"Следующая группа...\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}";
+        ShowEnemyAreaMessage("Собирает лут");
+        SetRaidStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
     }
 
-    public void ShowCompleted(int raidNumber, bool success, string message, int killedEnemies, int totalEnemies, int goldFound, int experienceGained)
+    public void ShowCompleted(int raidNumber, bool success, string message, int killedEnemies, int totalEnemies, float raidProgress, int goldFound, int experienceGained)
     {
         BuildIfNeeded();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = success ? "Завершен" : "Провален";
         _timerText.text = "";
         SetBarFill(_orcAttackFill, 0f);
-        SetRaidProgress(killedEnemies, totalEnemies);
+        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         ClearEnemies();
+        HideEnemyAreaMessage();
         _logText.text = $"{message}\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}\nОпыт получен: {experienceGained}";
         _closeButton.gameObject.SetActive(true);
     }
@@ -211,6 +220,8 @@ public sealed class RaidPanelView : MonoBehaviour
         CreateBar("Orc Attack", new Vector2(20f, -116f), new Vector2(175f, 8f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _orcAttackFill);
 
         _enemyRowsRoot = CreateRect("Enemies", new Vector2(212f, -58f), new Vector2(208f, 150f));
+        _enemyAreaMessage = CreateText(_enemyRowsRoot, "Enemy Area Message", "Собирает лут", new Vector2(0f, -42f), new Vector2(208f, 64f), 18f, TextAlignmentOptions.Center);
+        _enemyAreaMessage.gameObject.SetActive(false);
         _logText = CreateText("Log", "Ожидание", new Vector2(20f, -216f), new Vector2(400f, 70f), 14f, TextAlignmentOptions.Left);
         _raidProgressText = CreateText("Raid Progress Label", "Прогресс рейда", new Vector2(20f, -292f), new Vector2(400f, 20f), 14f, TextAlignmentOptions.Left);
         CreateBar("Raid Progress", new Vector2(20f, -316f), new Vector2(400f, 18f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _raidProgressFill);
@@ -256,10 +267,34 @@ public sealed class RaidPanelView : MonoBehaviour
         }
     }
 
+    private void ShowEnemyAreaMessage(string message)
+    {
+        _enemyAreaMessage.text = message;
+        _enemyAreaMessage.gameObject.SetActive(true);
+    }
+
+    private void HideEnemyAreaMessage()
+    {
+        if (_enemyAreaMessage != null)
+        {
+            _enemyAreaMessage.gameObject.SetActive(false);
+        }
+    }
+
+    private void SetRaidStatsLog(int goldFound, int experienceGained)
+    {
+        _logText.text = $"Золото найдено: {goldFound}\nОпыт получен: {experienceGained}";
+    }
+
     private TextMeshProUGUI CreateText(string name, string text, Vector2 anchoredPosition, Vector2 size, float fontSize, TextAlignmentOptions alignment)
     {
+        return CreateText(_root, name, text, anchoredPosition, size, fontSize, alignment);
+    }
+
+    private TextMeshProUGUI CreateText(Transform parent, string name, string text, Vector2 anchoredPosition, Vector2 size, float fontSize, TextAlignmentOptions alignment)
+    {
         GameObject textObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        textObject.transform.SetParent(_root, false);
+        textObject.transform.SetParent(parent, false);
 
         RectTransform rectTransform = (RectTransform)textObject.transform;
         rectTransform.anchorMin = new Vector2(0f, 1f);
@@ -373,22 +408,14 @@ public sealed class RaidPanelView : MonoBehaviour
         rectTransform.anchoredPosition = startPosition;
     }
 
-    private void SetRaidProgress(int killedEnemies, int totalEnemies)
+    private void SetRaidProgress(int killedEnemies, int totalEnemies, float progressRatio)
     {
         int safeTotal = Mathf.Max(0, totalEnemies);
         int safeKilled = Mathf.Clamp(killedEnemies, 0, safeTotal);
-        float ratio = safeTotal <= 0 ? 0f : safeKilled / (float)safeTotal;
         _raidProgressText.text = safeTotal <= 0
             ? "Прогресс рейда: ждет орка"
             : $"Прогресс рейда: {safeKilled}/{safeTotal}";
-        SetBarFill(_raidProgressFill, ratio);
-    }
-
-    private void SetTransitionProgress(float transitionProgress)
-    {
-        float ratio = Mathf.Clamp01(transitionProgress);
-        _raidProgressText.text = $"Следующая группа: {Mathf.RoundToInt(ratio * 100f)}%";
-        SetBarFill(_raidProgressFill, ratio);
+        SetBarFill(_raidProgressFill, progressRatio);
     }
 
     private void HandleCloseClicked()

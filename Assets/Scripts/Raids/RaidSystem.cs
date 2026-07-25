@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class RaidSystem : MonoBehaviour
 {
+    private const float _minimumProgressSegmentSeconds = 0.01f;
+
     [Header("Configs")]
     [SerializeField] private RaidConfig _raidConfig = null;
     [SerializeField] private EnemyConfig _enemyConfig = null;
@@ -15,9 +18,10 @@ public sealed class RaidSystem : MonoBehaviour
     [SerializeField] private RectTransform _panelsRoot = null;
     [SerializeField] private RaidPanelView _panelTemplate = null;
     [SerializeField] private TextMeshProUGUI _goldText = null;
+    [SerializeField] private Button _spawnRaidButton = null;
 
     [Header("Layout")]
-    [SerializeField] private Vector2 _firstPanelAnchoredPosition = new Vector2(20f, -20f);
+    [SerializeField] private Vector2 _firstPanelAnchoredPosition = new Vector2(20f, -70f);
     [SerializeField] private Vector2 _panelSpacing = new Vector2(20f, 20f);
     [SerializeField, Min(1)] private int _panelsPerRow = 2;
 
@@ -49,11 +53,20 @@ public sealed class RaidSystem : MonoBehaviour
         }
 
         float deltaTime = Time.deltaTime;
+        RefreshSpawnRaidButtonState();
         UpdateRaidSpawn(deltaTime);
 
         for (int i = _raids.Count - 1; i >= 0; i--)
         {
             UpdateRaid(_raids[i], deltaTime);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_spawnRaidButton != null)
+        {
+            _spawnRaidButton.onClick.RemoveListener(CreateRaid);
         }
     }
 
@@ -88,6 +101,7 @@ public sealed class RaidSystem : MonoBehaviour
         ValidateReferences();
         _initialized = true;
         _panelTemplate.gameObject.SetActive(false);
+        ConfigureSpawnRaidButton();
         _newRaidTimer = _raidConfig.NewRaidIntervalSeconds;
         RefreshGoldText();
 
@@ -115,14 +129,58 @@ public sealed class RaidSystem : MonoBehaviour
         }
 
         if (_orcBirthSystem == null || _canvas == null || _panelsRoot == null || _panelTemplate == null ||
-            _goldText == null)
+            _goldText == null || _spawnRaidButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(RaidSystem)} requires scene references.");
         }
     }
 
+    private void ConfigureSpawnRaidButton()
+    {
+        _spawnRaidButton.onClick.RemoveListener(CreateRaid);
+        _spawnRaidButton.onClick.AddListener(CreateRaid);
+
+        Image image = _spawnRaidButton.GetComponent<Image>();
+
+        if (image != null)
+        {
+            image.color = new Color(0.92f, 0.92f, 0.9f, 1f);
+            image.raycastTarget = true;
+        }
+
+        TextMeshProUGUI label = _spawnRaidButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+        if (label != null)
+        {
+            label.text = "Добавить новый рейд";
+            label.fontSize = 15f;
+            label.color = Color.black;
+            label.alignment = TextAlignmentOptions.Center;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.raycastTarget = false;
+        }
+
+        RefreshSpawnRaidButtonState();
+    }
+
+    private void RefreshSpawnRaidButtonState()
+    {
+        bool shouldShow = _raidConfig.UseManualRaidSpawnButton;
+
+        if (_spawnRaidButton.gameObject.activeSelf != shouldShow)
+        {
+            _spawnRaidButton.gameObject.SetActive(shouldShow);
+        }
+    }
+
     private void UpdateRaidSpawn(float deltaTime)
     {
+        if (_raidConfig.UseManualRaidSpawnButton)
+        {
+            return;
+        }
+
         _newRaidTimer -= deltaTime;
 
         if (_newRaidTimer > 0f)
@@ -134,13 +192,35 @@ public sealed class RaidSystem : MonoBehaviour
         _newRaidTimer = _raidConfig.NewRaidIntervalSeconds;
     }
 
+    private bool TryExpireWaitingRaid(RaidRuntimeData raid)
+    {
+        if (raid.WaitingSeconds < _raidConfig.WaitingRaidLifetimeSeconds)
+        {
+            return false;
+        }
+
+        RemoveRaid(raid);
+        return true;
+    }
+
+    private void RefreshWaitingRaidUi(RaidRuntimeData raid)
+    {
+        float remainingSeconds = Mathf.Max(0f, _raidConfig.WaitingRaidLifetimeSeconds - raid.WaitingSeconds);
+        raid.Panel.ShowWaiting(raid.Id, remainingSeconds);
+    }
+
     private void UpdateRaid(RaidRuntimeData raid, float deltaTime)
     {
         switch (raid.State)
         {
             case RaidState.Waiting:
                 raid.WaitingSeconds += deltaTime;
-                raid.Panel.ShowWaiting(raid.Id, raid.WaitingSeconds);
+                if (TryExpireWaitingRaid(raid))
+                {
+                    return;
+                }
+
+                RefreshWaitingRaidUi(raid);
                 break;
             case RaidState.InProgress:
                 UpdateRaidBattle(raid, deltaTime);
@@ -167,7 +247,7 @@ public sealed class RaidSystem : MonoBehaviour
         _nextRaidId++;
         _raids.Add(raid);
         panel.SetAnchoredPosition(GetRaidSlotPosition(layoutSlot));
-        panel.ShowWaiting(raid.Id, raid.WaitingSeconds);
+        RefreshWaitingRaidUi(raid);
     }
 
     private void StartRaid(RaidRuntimeData raid, OrcRuntimeData orcData)
@@ -180,8 +260,15 @@ public sealed class RaidSystem : MonoBehaviour
         raid.ExperienceGained = 0;
         raid.TotalGold = Random.Range(_raidConfig.MinGoldReward, _raidConfig.MaxGoldReward + 1);
         raid.GoldFound = 0;
+        raid.GoldEarnedFromKills = 0;
+        raid.PendingGold = 0;
+        raid.LootGoldStart = 0;
+        raid.LootGoldTarget = 0;
+        raid.CompleteAfterLoot = false;
 
         GenerateEnemies(raid);
+        BuildRaidProgressTimeline(raid);
+        BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
         _orcBirthSystem.SetOrcState(orcData, OrcActivityState.InRaid);
         RefreshRaidBattleUi(raid);
     }
@@ -206,6 +293,105 @@ public sealed class RaidSystem : MonoBehaviour
         raid.BattleCount = Mathf.CeilToInt(raid.Enemies.Count / (float)_raidConfig.MaxEnemiesPerBattle);
     }
 
+    private void BuildRaidProgressTimeline(RaidRuntimeData raid)
+    {
+        raid.ProgressSegmentDurations.Clear();
+        raid.TotalProgressSeconds = 0f;
+
+        for (int battleNumber = 1; battleNumber <= raid.BattleCount; battleNumber++)
+        {
+            int battleStartIndex = (battleNumber - 1) * _raidConfig.MaxEnemiesPerBattle;
+            int battleEndIndex = Mathf.Min(battleStartIndex + _raidConfig.MaxEnemiesPerBattle, raid.Enemies.Count);
+            AddProgressSegment(raid, EstimateBattleProgressSegmentSeconds(raid, battleStartIndex, battleEndIndex));
+
+            AddProgressSegment(raid, _raidConfig.BattleTransitionDelaySeconds);
+        }
+    }
+
+    private void AddProgressSegment(RaidRuntimeData raid, float durationSeconds)
+    {
+        float safeDuration = Mathf.Max(0f, durationSeconds);
+        raid.ProgressSegmentDurations.Add(safeDuration);
+        raid.TotalProgressSeconds += safeDuration;
+    }
+
+    private float EstimateBattleProgressSegmentSeconds(RaidRuntimeData raid, int startIndex, int endIndex)
+    {
+        int attacksNeeded = 0;
+        float damage = Mathf.Max(1f, raid.OrcDamage);
+
+        for (int i = startIndex; i < endIndex; i++)
+        {
+            attacksNeeded += Mathf.Max(1, Mathf.CeilToInt(raid.Enemies[i].MaxHp / damage));
+        }
+
+        return Mathf.Max(_minimumProgressSegmentSeconds, attacksNeeded * Mathf.Max(0.01f, raid.OrcAttackInterval));
+    }
+
+    private void BeginProgressSegment(RaidRuntimeData raid, int segmentIndex)
+    {
+        raid.ProgressSegmentIndex = Mathf.Clamp(segmentIndex, 0, Mathf.Max(0, raid.ProgressSegmentDurations.Count - 1));
+        raid.ProgressSegmentTimer = 0f;
+    }
+
+    private void AdvanceRaidProgressSegmentTimer(RaidRuntimeData raid, float deltaTime)
+    {
+        raid.ProgressSegmentTimer += deltaTime;
+    }
+
+    private void CompleteCurrentProgressSegment(RaidRuntimeData raid)
+    {
+        if (raid.ProgressSegmentIndex < 0 || raid.ProgressSegmentIndex >= raid.ProgressSegmentDurations.Count)
+        {
+            return;
+        }
+
+        raid.ProgressSegmentTimer = raid.ProgressSegmentDurations[raid.ProgressSegmentIndex];
+    }
+
+    private void CompleteAllProgressSegments(RaidRuntimeData raid)
+    {
+        raid.ProgressSegmentIndex = raid.ProgressSegmentDurations.Count;
+        raid.ProgressSegmentTimer = 0f;
+    }
+
+    private float GetRaidProgressRatio(RaidRuntimeData raid)
+    {
+        if (raid.TotalProgressSeconds <= 0f)
+        {
+            return 0f;
+        }
+
+        if (raid.ProgressSegmentIndex >= raid.ProgressSegmentDurations.Count)
+        {
+            return 1f;
+        }
+
+        float completedSeconds = 0f;
+        int safeSegmentIndex = Mathf.Clamp(raid.ProgressSegmentIndex, 0, raid.ProgressSegmentDurations.Count - 1);
+
+        for (int i = 0; i < safeSegmentIndex; i++)
+        {
+            completedSeconds += raid.ProgressSegmentDurations[i];
+        }
+
+        float currentSegmentSeconds = raid.ProgressSegmentDurations[safeSegmentIndex];
+        completedSeconds += currentSegmentSeconds <= 0f
+            ? 0f
+            : Mathf.Clamp(raid.ProgressSegmentTimer, 0f, currentSegmentSeconds);
+        return Mathf.Clamp01(completedSeconds / raid.TotalProgressSeconds);
+    }
+
+    private static int GetBattleProgressSegmentIndex(int battleNumber)
+    {
+        return (Mathf.Max(1, battleNumber) - 1) * 2;
+    }
+
+    private static int GetTransitionProgressSegmentIndex(int battleNumber)
+    {
+        return GetBattleProgressSegmentIndex(battleNumber) + 1;
+    }
+
     private void UpdateRaidBattle(RaidRuntimeData raid, float deltaTime)
     {
         if (raid.OrcHp <= 0f)
@@ -220,11 +406,18 @@ public sealed class RaidSystem : MonoBehaviour
             return;
         }
 
+        AdvanceRaidProgressSegmentTimer(raid, deltaTime);
         UpdateOrcAttack(raid, deltaTime);
         UpdateEnemyAttacks(raid, deltaTime);
 
         if (raid.State != RaidState.InProgress)
         {
+            return;
+        }
+
+        if (!HasAliveEnemyInCurrentBattle(raid))
+        {
+            StartBattleTransitionOrCompleteRaid(raid);
             return;
         }
 
@@ -257,7 +450,7 @@ public sealed class RaidSystem : MonoBehaviour
             raid.ExperienceGained += target.ExperienceReward;
             _orcBirthSystem.AddExperienceToOrc(raid.Orc, target.ExperienceReward);
             RefreshRaidOrcCombatStats(raid);
-            RefreshGoldFound(raid);
+            QueueGoldForKill(raid);
         }
 
         StartCoroutine(raid.Panel.PlayOrcAttackEffect(enemyIndexInBattle));
@@ -301,22 +494,22 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void StartBattleTransitionOrCompleteRaid(RaidRuntimeData raid)
     {
+        CompleteCurrentProgressSegment(raid);
         int nextBattleStartIndex = raid.CurrentBattleStartIndex + _raidConfig.MaxEnemiesPerBattle;
-
-        if (nextBattleStartIndex >= raid.Enemies.Count)
-        {
-            CompleteRaid(raid, true);
-            return;
-        }
+        raid.CompleteAfterLoot = nextBattleStartIndex >= raid.Enemies.Count;
 
         raid.State = RaidState.BattleTransition;
         raid.BattleTransitionTimer = 0f;
         raid.BattleTransitionSeconds = _raidConfig.BattleTransitionDelaySeconds;
         raid.OrcAttackProgress = 0f;
+        BeginProgressSegment(raid, GetTransitionProgressSegmentIndex(raid.CurrentBattleNumber));
+        BeginLootGoldCollection(raid);
 
         if (raid.BattleTransitionSeconds <= 0f)
         {
-            AdvanceToNextBattle(raid);
+            CompleteLootGoldCollection(raid);
+            CompleteCurrentProgressSegment(raid);
+            FinishBattleTransition(raid);
             return;
         }
 
@@ -326,10 +519,14 @@ public sealed class RaidSystem : MonoBehaviour
     private void UpdateBattleTransition(RaidRuntimeData raid, float deltaTime)
     {
         raid.BattleTransitionTimer += deltaTime;
+        raid.ProgressSegmentTimer = raid.BattleTransitionTimer;
+        UpdateLootGoldCollection(raid);
 
         if (raid.BattleTransitionTimer >= raid.BattleTransitionSeconds)
         {
-            AdvanceToNextBattle(raid);
+            CompleteLootGoldCollection(raid);
+            CompleteCurrentProgressSegment(raid);
+            FinishBattleTransition(raid);
             return;
         }
 
@@ -343,7 +540,20 @@ public sealed class RaidSystem : MonoBehaviour
         raid.CurrentBattleNumber++;
         raid.OrcAttackProgress = 0f;
         raid.BattleTransitionTimer = 0f;
+        raid.CompleteAfterLoot = false;
+        BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
         RefreshRaidBattleUi(raid);
+    }
+
+    private void FinishBattleTransition(RaidRuntimeData raid)
+    {
+        if (raid.CompleteAfterLoot)
+        {
+            CompleteRaid(raid, true);
+            return;
+        }
+
+        AdvanceToNextBattle(raid);
     }
 
     private void CompleteRaid(RaidRuntimeData raid, bool success)
@@ -358,7 +568,8 @@ public sealed class RaidSystem : MonoBehaviour
         if (success)
         {
             raid.KilledEnemies = raid.Enemies.Count;
-            RefreshGoldFound(raid);
+            CompleteLootGoldCollection(raid);
+            CompleteAllProgressSegments(raid);
         }
 
         _gold += raid.GoldFound;
@@ -371,7 +582,7 @@ public sealed class RaidSystem : MonoBehaviour
         }
 
         string message = success ? "Орк прошел рейд и вернулся на базу." : "Орк проиграл бой и ушел отдыхать.";
-        raid.Panel.ShowCompleted(raid.Id, success, message, raid.KilledEnemies, raid.Enemies.Count, raid.GoldFound, raid.ExperienceGained);
+        raid.Panel.ShowCompleted(raid.Id, success, message, raid.KilledEnemies, raid.Enemies.Count, GetRaidProgressRatio(raid), raid.GoldFound, raid.ExperienceGained);
     }
 
     public void RefreshOrcCombatStats(OrcRuntimeData orcData)
@@ -501,15 +712,14 @@ public sealed class RaidSystem : MonoBehaviour
             raid.OrcAttackProgress,
             raid.KilledEnemies,
             raid.Enemies.Count,
+            GetRaidProgressRatio(raid),
             raid.GoldFound,
+            raid.ExperienceGained,
             _enemyViewData);
     }
 
     private void RefreshBattleTransitionUi(RaidRuntimeData raid)
     {
-        float transitionProgress = raid.BattleTransitionSeconds <= 0f
-            ? 1f
-            : Mathf.Clamp01(raid.BattleTransitionTimer / raid.BattleTransitionSeconds);
         raid.Panel.ShowBattleTransition(
             raid.Id,
             raid.CurrentBattleNumber + 1,
@@ -517,17 +727,48 @@ public sealed class RaidSystem : MonoBehaviour
             raid.Orc.Name,
             raid.OrcHp,
             raid.OrcMaxHp,
-            transitionProgress,
+            GetRaidProgressRatio(raid),
             raid.KilledEnemies,
             raid.Enemies.Count,
-            raid.GoldFound);
+            raid.CompleteAfterLoot,
+            raid.GoldFound,
+            raid.ExperienceGained);
     }
 
-    private void RefreshGoldFound(RaidRuntimeData raid)
+    private void QueueGoldForKill(RaidRuntimeData raid)
     {
         int totalEnemies = Mathf.Max(1, raid.Enemies.Count);
-        float progress = Mathf.Clamp01(raid.KilledEnemies / (float)totalEnemies);
-        raid.GoldFound = Mathf.RoundToInt(raid.TotalGold * progress);
+        int targetGoldEarned = Mathf.RoundToInt(raid.TotalGold * Mathf.Clamp01(raid.KilledEnemies / (float)totalEnemies));
+        int goldToQueue = Mathf.Max(0, targetGoldEarned - raid.GoldEarnedFromKills);
+        raid.GoldEarnedFromKills = Mathf.Max(raid.GoldEarnedFromKills, targetGoldEarned);
+        raid.PendingGold += goldToQueue;
+    }
+
+    private void BeginLootGoldCollection(RaidRuntimeData raid)
+    {
+        raid.LootGoldStart = raid.GoldFound;
+        raid.LootGoldTarget = raid.GoldFound + Mathf.Max(0, raid.PendingGold);
+        raid.PendingGold = 0;
+    }
+
+    private void UpdateLootGoldCollection(RaidRuntimeData raid)
+    {
+        int goldToCollect = raid.LootGoldTarget - raid.LootGoldStart;
+
+        if (goldToCollect <= 0)
+        {
+            return;
+        }
+
+        float progress = raid.BattleTransitionSeconds <= 0f
+            ? 1f
+            : Mathf.Clamp01(raid.BattleTransitionTimer / raid.BattleTransitionSeconds);
+        raid.GoldFound = raid.LootGoldStart + Mathf.FloorToInt(goldToCollect * progress);
+    }
+
+    private void CompleteLootGoldCollection(RaidRuntimeData raid)
+    {
+        raid.GoldFound = Mathf.Max(raid.GoldFound, raid.LootGoldTarget);
     }
 
     private void RefreshGoldText()
@@ -595,6 +836,7 @@ public sealed class RaidSystem : MonoBehaviour
         public readonly RaidPanelView Panel;
         public readonly int LayoutSlot;
         public readonly List<EnemyRuntimeData> Enemies = new List<EnemyRuntimeData>();
+        public readonly List<float> ProgressSegmentDurations = new List<float>();
 
         public RaidState State;
         public float WaitingSeconds;
@@ -612,8 +854,16 @@ public sealed class RaidSystem : MonoBehaviour
         public int ExperienceGained;
         public int TotalGold;
         public int GoldFound;
+        public int GoldEarnedFromKills;
+        public int PendingGold;
+        public int LootGoldStart;
+        public int LootGoldTarget;
+        public bool CompleteAfterLoot;
         public float BattleTransitionTimer;
         public float BattleTransitionSeconds;
+        public int ProgressSegmentIndex;
+        public float ProgressSegmentTimer;
+        public float TotalProgressSeconds;
 
         public RaidRuntimeData(int id, RaidPanelView panel, int layoutSlot)
         {
