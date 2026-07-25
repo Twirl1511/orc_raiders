@@ -10,11 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b21d4d3eaf64a44a1c7347c62b3d901, type: 3}
-  m_Name: 6_Orc Birth
+  m_Name: 2_Orc Birth
   m_EditorClassIdentifier: Assembly-CSharp::OrcBirthConfig
   _requiredDiceCount: 6
   _diceConfig: {fileID: 11400000, guid: e0b719f07e2a4f7db1bbf54472456a21, type: 2}
   _statsConfig: {fileID: 11400000, guid: 24170c34a08f4843bdd2ca6c88a02000, type: 2}
+  _orcVisualSize: {x: 0.65, y: 0.65}
+  _orcVisualColor: {r: 0.45, g: 0.75, b: 0.4, a: 1}
+  _orcSpriteSortingOrder: 20
+  _orcLabelSortingOrder: 25
   _firstOrcSpawnPosition: {x: -5.5, y: -1.7}
   _orcSpawnSpacing: {x: 1.45, y: 0}
   _maxOrcsPerRow: 6
+  _firstRestingOrcPosition: {x: 3.2, y: -1.7}
+  _restingOrcSpacing: {x: 1, y: 0}
+  _maxRestingOrcsPerRow: 4

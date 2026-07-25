@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5418a86a9c74c0c8e4df75a8ad8ce2b, type: 3}
-  m_Name: 7_Dice
+  m_Name: 3_Dice
   m_EditorClassIdentifier: Assembly-CSharp::DiceConfig
   _dice:
   - _id: strength_basic_d6_01

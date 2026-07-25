@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5316ed3217554a40b41bbf8020fb49aa, type: 3}
-  m_Name: 5_Camera
+  m_Name: 1_Camera
   m_EditorClassIdentifier: Assembly-CSharp::CameraConfig
   _enableMouseEdgeMovement: 0
   _edgeSizePixels: 28

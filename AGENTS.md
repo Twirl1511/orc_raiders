@@ -34,6 +34,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 
 - Follow the config workflow from `D:/WORK/Cradle of Winter`: ScriptableObject configs live as separate assets, but create only configs that are needed for explicitly requested mechanics.
 - Store config assets in `Assets/7_Configs` with numeric prefixes so important configs stay easy to scan and compare.
+- Number config assets from `0_...`; `0_Stats` is the first/base config.
 - Runtime config classes should use `[CreateAssetMenu(..., menuName = "GAME/...")]`, private serialized fields, and public read-only properties.
 - Add new mechanic numbers to focused configs instead of putting balance values directly on scene components or prefabs.
 - Reference feature configs through serialized scene references, narrow config providers, or singletons only when they already exist for the requested mechanic. Do not scatter direct config references across every prefab unless the prefab itself is a reusable config-driven UI/control template.
@@ -69,7 +70,8 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 ## Prototype Visuals
 
 - When creating buildings, use simple white 2D sprites with text inside the sprite that says what the building is.
-- When creating units, use simple white 2D sprites with a text label above the unit that says what the unit is.
+- When creating units, use simple greenish 2D sprites with the unit name inside the sprite.
+- Unit placeholders should render above the cauldron, rest zone, and other building placeholders.
 - Keep these placeholder visuals clean, readable, and easy to replace later.
 - For world objects such as buildings and units, keep the parent object as a clean container. Put the visual sprite on a separate child and the collider on a separate child so sizes can be edited without changing the parent scale.
 

@@ -12,16 +12,32 @@ public sealed class OrcBirthConfig : ScriptableObject
     [SerializeField] private StatsConfig _statsConfig = null;
 
     [Header("Orc")]
+    [SerializeField] private Vector2 _orcVisualSize = new Vector2(0.65f, 0.65f);
+    [SerializeField] private Color _orcVisualColor = new Color(0.45f, 0.75f, 0.4f, 1f);
+    [SerializeField] private int _orcSpriteSortingOrder = 20;
+    [SerializeField] private int _orcLabelSortingOrder = 25;
     [SerializeField] private Vector2 _firstOrcSpawnPosition = new Vector2(-5.5f, -1.7f);
     [SerializeField] private Vector2 _orcSpawnSpacing = new Vector2(1.45f, 0f);
     [SerializeField, Min(1)] private int _maxOrcsPerRow = 6;
 
+    [Header("Rest")]
+    [SerializeField] private Vector2 _firstRestingOrcPosition = new Vector2(3.2f, -1.7f);
+    [SerializeField] private Vector2 _restingOrcSpacing = new Vector2(1f, 0f);
+    [SerializeField, Min(1)] private int _maxRestingOrcsPerRow = 4;
+
     public int RequiredDiceCount => _requiredDiceCount;
     public DiceConfig DiceConfig => _diceConfig;
     public StatsConfig StatsConfig => _statsConfig;
+    public Vector2 OrcVisualSize => new Vector2(Mathf.Max(0.01f, _orcVisualSize.x), Mathf.Max(0.01f, _orcVisualSize.y));
+    public Color OrcVisualColor => _orcVisualColor;
+    public int OrcSpriteSortingOrder => _orcSpriteSortingOrder;
+    public int OrcLabelSortingOrder => _orcLabelSortingOrder;
     public Vector2 FirstOrcSpawnPosition => _firstOrcSpawnPosition;
     public Vector2 OrcSpawnSpacing => _orcSpawnSpacing;
     public int MaxOrcsPerRow => _maxOrcsPerRow;
+    public Vector2 FirstRestingOrcPosition => _firstRestingOrcPosition;
+    public Vector2 RestingOrcSpacing => _restingOrcSpacing;
+    public int MaxRestingOrcsPerRow => _maxRestingOrcsPerRow;
 }
 
 public enum OrcStatType
