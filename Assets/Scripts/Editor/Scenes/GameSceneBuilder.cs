@@ -16,11 +16,15 @@ public static class GameSceneBuilder
     {
         Sprite whiteSprite = GetOrCreateWhiteSprite();
         CameraConfig cameraConfig = GetOrCreateCameraConfig();
+        OrcBirthConfig orcBirthConfig = GetOrCreateOrcBirthConfig();
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        CreateCamera(cameraConfig);
+        Camera sceneCamera = CreateCamera(cameraConfig);
         CreateTerrain(whiteSprite);
         CreateCauldron(whiteSprite);
+        OrcBirthUiReferences uiReferences = CreateOrcBirthUi(orcBirthConfig);
+        CreateOrcBirthSystem(orcBirthConfig, sceneCamera, uiReferences);
+        OrcBirthUiBuilder.EnsureEventSystem();
 
         EditorSceneManager.SaveScene(scene, _scenePath);
         AddSceneToBuildSettings();
@@ -30,7 +34,7 @@ public static class GameSceneBuilder
         Debug.Log($"Created game scene: {_scenePath}");
     }
 
-    private static void CreateCamera(CameraConfig cameraConfig)
+    private static Camera CreateCamera(CameraConfig cameraConfig)
     {
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";
@@ -54,6 +58,8 @@ public static class GameSceneBuilder
         serializedPan.FindProperty("_minPosition").vector2Value = new Vector2(-12f, -4f);
         serializedPan.FindProperty("_maxPosition").vector2Value = new Vector2(12f, 4f);
         serializedPan.ApplyModifiedPropertiesWithoutUndo();
+
+        return camera;
     }
 
     private static void CreateTerrain(Sprite whiteSprite)
@@ -151,6 +157,51 @@ public static class GameSceneBuilder
         AssetDatabase.CreateAsset(cameraConfig, "Assets/7_Configs/5_Camera.asset");
         AssetDatabase.SaveAssets();
         return cameraConfig;
+    }
+
+    private static OrcBirthConfig GetOrCreateOrcBirthConfig()
+    {
+        EnsureFolder("Assets", "7_Configs");
+
+        OrcBirthConfig orcBirthConfig = AssetDatabase.LoadAssetAtPath<OrcBirthConfig>("Assets/7_Configs/6_Orc Birth.asset");
+
+        if (orcBirthConfig != null)
+        {
+            return orcBirthConfig;
+        }
+
+        orcBirthConfig = ScriptableObject.CreateInstance<OrcBirthConfig>();
+        AssetDatabase.CreateAsset(orcBirthConfig, "Assets/7_Configs/6_Orc Birth.asset");
+        AssetDatabase.SaveAssets();
+        return orcBirthConfig;
+    }
+
+    private static OrcBirthUiReferences CreateOrcBirthUi(OrcBirthConfig orcBirthConfig)
+    {
+        GameObject uiRoot = new GameObject("Scene UI");
+        int requiredDiceCount = orcBirthConfig != null ? orcBirthConfig.RequiredDiceCount : 6;
+        return OrcBirthUiBuilder.Ensure(uiRoot.transform, requiredDiceCount, out _);
+    }
+
+    private static void CreateOrcBirthSystem(OrcBirthConfig orcBirthConfig, Camera sceneCamera, OrcBirthUiReferences uiReferences)
+    {
+        GameObject systemObject = new GameObject("Orc Birth System");
+        OrcBirthSystem birthSystem = systemObject.AddComponent<OrcBirthSystem>();
+        birthSystem.Configure(orcBirthConfig, sceneCamera);
+        birthSystem.ConfigureUi(uiReferences);
+
+        SerializedObject serializedBirthSystem = new SerializedObject(birthSystem);
+        serializedBirthSystem.FindProperty("_config").objectReferenceValue = orcBirthConfig;
+        serializedBirthSystem.FindProperty("_camera").objectReferenceValue = sceneCamera;
+        serializedBirthSystem.FindProperty("_canvas").objectReferenceValue = uiReferences.Canvas;
+        serializedBirthSystem.FindProperty("_availableDiceRoot").objectReferenceValue = uiReferences.AvailableDiceRoot;
+        serializedBirthSystem.FindProperty("_selectedDiceRoot").objectReferenceValue = uiReferences.SelectedDiceRoot;
+        serializedBirthSystem.FindProperty("_diceButtonTemplate").objectReferenceValue = uiReferences.DiceButtonTemplate;
+        serializedBirthSystem.FindProperty("_selectedDiceLabel").objectReferenceValue = uiReferences.SelectedDiceLabel;
+        serializedBirthSystem.FindProperty("_statusText").objectReferenceValue = uiReferences.StatusText;
+        serializedBirthSystem.FindProperty("_orcInfoText").objectReferenceValue = uiReferences.OrcInfoText;
+        serializedBirthSystem.FindProperty("_createOrcButton").objectReferenceValue = uiReferences.CreateOrcButton;
+        serializedBirthSystem.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void AddUniversalCameraDataIfAvailable(GameObject cameraObject)

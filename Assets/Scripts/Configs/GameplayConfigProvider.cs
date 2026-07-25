@@ -15,6 +15,7 @@ public sealed class GameplayConfigProvider : MonoBehaviour
     public RaidWaveConfig RaidWaves => _gameplayConfig.RaidWaves;
     public UiBalanceConfig UiBalance => _gameplayConfig.UiBalance;
     public CameraConfig Camera => _gameplayConfig.Camera;
+    public OrcBirthConfig OrcBirth => _gameplayConfig.OrcBirth;
 
     private void Awake()
     {

@@ -14,6 +14,7 @@ public static class ConfigAssetCreator
         RaidWaveConfig raidWaveConfig = LoadOrCreate<RaidWaveConfig>("3_Raid Waves.asset");
         UiBalanceConfig uiBalanceConfig = LoadOrCreate<UiBalanceConfig>("4_UI Balance.asset");
         CameraConfig cameraConfig = LoadOrCreate<CameraConfig>("5_Camera.asset");
+        OrcBirthConfig orcBirthConfig = LoadOrCreate<OrcBirthConfig>("6_Orc Birth.asset");
         GameplayConfig gameplayConfig = LoadOrCreate<GameplayConfig>("9_Gameplay Config.asset");
 
         SerializedObject serializedGameplayConfig = new SerializedObject(gameplayConfig);
@@ -23,6 +24,7 @@ public static class ConfigAssetCreator
         AssignIfEmpty(serializedGameplayConfig, "_raidWaves", raidWaveConfig);
         AssignIfEmpty(serializedGameplayConfig, "_uiBalance", uiBalanceConfig);
         AssignIfEmpty(serializedGameplayConfig, "_camera", cameraConfig);
+        AssignIfEmpty(serializedGameplayConfig, "_orcBirth", orcBirthConfig);
         serializedGameplayConfig.ApplyModifiedPropertiesWithoutUndo();
 
         EditorUtility.SetDirty(gameplayConfig);

@@ -11,6 +11,7 @@ public sealed class GameplayConfig : ScriptableObject
     [SerializeField] private RaidWaveConfig _raidWaves = null;
     [SerializeField] private UiBalanceConfig _uiBalance = null;
     [SerializeField] private CameraConfig _camera = null;
+    [SerializeField] private OrcBirthConfig _orcBirth = null;
 
     public GameConfig GameConfig => _gameConfig;
     public EconomyConfig Economy => _economy;
@@ -18,6 +19,7 @@ public sealed class GameplayConfig : ScriptableObject
     public RaidWaveConfig RaidWaves => _raidWaves;
     public UiBalanceConfig UiBalance => _uiBalance;
     public CameraConfig Camera => _camera;
+    public OrcBirthConfig OrcBirth => _orcBirth;
 
     public void Validate()
     {
@@ -27,6 +29,7 @@ public sealed class GameplayConfig : ScriptableObject
         Require(_raidWaves, nameof(_raidWaves));
         Require(_uiBalance, nameof(_uiBalance));
         Require(_camera, nameof(_camera));
+        Require(_orcBirth, nameof(_orcBirth));
     }
 
     private static void Require(UnityEngine.Object config, string fieldName)

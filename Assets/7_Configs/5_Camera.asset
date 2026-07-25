@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5316ed3217554a40b41bbf8020fb49aa, type: 3}
   m_Name: 5_Camera
   m_EditorClassIdentifier: Assembly-CSharp::CameraConfig
-  _enableMouseEdgeMovement: 1
+  _enableMouseEdgeMovement: 0
   _edgeSizePixels: 28
   _panSpeed: 8
   _minPosition: {x: -12, y: -4}

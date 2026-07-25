@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 [ExecuteAlways]
 public sealed class GameSceneBootstrap : MonoBehaviour
@@ -10,6 +11,7 @@ public sealed class GameSceneBootstrap : MonoBehaviour
     private const string _labelName = "Label";
 
     [SerializeField] private CameraConfig _cameraConfig = null;
+    [SerializeField] private OrcBirthConfig _orcBirthConfig = null;
 
     private static Sprite _whiteSprite;
 
@@ -25,12 +27,15 @@ public sealed class GameSceneBootstrap : MonoBehaviour
 
     private void EnsureSceneObjects()
     {
-        EnsureCamera();
+        Camera sceneCamera = EnsureCamera();
         EnsureTerrain();
         EnsureCauldron();
+        OrcBirthUiReferences uiReferences = EnsureOrcBirthUi();
+        EnsureEventSystem();
+        EnsureOrcBirthSystem(sceneCamera, uiReferences);
     }
 
-    private void EnsureCamera()
+    private Camera EnsureCamera()
     {
         Transform cameraTransform = GetOrCreateChild(_cameraName);
         cameraTransform.localPosition = new Vector3(0f, 0f, -10f);
@@ -50,6 +55,8 @@ public sealed class GameSceneBootstrap : MonoBehaviour
         EdgeCameraPan cameraPan = GetOrAddComponent<EdgeCameraPan>(cameraObject);
         cameraPan.Configure(_cameraConfig);
         AddUniversalCameraDataIfAvailable(cameraObject);
+
+        return camera;
     }
 
     private void EnsureTerrain()
@@ -101,6 +108,50 @@ public sealed class GameSceneBootstrap : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.sortingOrder = 10;
         label.rectTransform.sizeDelta = new Vector2(5f, 2f);
+    }
+
+    private OrcBirthUiReferences EnsureOrcBirthUi()
+    {
+        int requiredDiceCount = _orcBirthConfig != null ? _orcBirthConfig.RequiredDiceCount : 6;
+        OrcBirthUiReferences uiReferences = OrcBirthUiBuilder.Ensure(transform, requiredDiceCount, out bool changed);
+
+        if (changed)
+        {
+            MarkSceneDirty();
+        }
+
+        return uiReferences;
+    }
+
+    private void EnsureEventSystem()
+    {
+        bool hadEventSystem = EventSystem.current != null;
+        OrcBirthUiBuilder.EnsureEventSystem();
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying && EventSystem.current != null)
+        {
+            UnityEditor.EditorUtility.SetDirty(EventSystem.current.gameObject);
+
+            if (!hadEventSystem)
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+            }
+        }
+#endif
+    }
+
+    private void EnsureOrcBirthSystem(Camera sceneCamera, OrcBirthUiReferences uiReferences)
+    {
+        bool changed = gameObject.GetComponent<OrcBirthSystem>() == null;
+        OrcBirthSystem orcBirthSystem = GetOrAddComponent<OrcBirthSystem>(gameObject);
+        changed |= orcBirthSystem.Configure(_orcBirthConfig, sceneCamera);
+        changed |= orcBirthSystem.ConfigureUi(uiReferences);
+
+        if (changed)
+        {
+            MarkSceneDirty();
+        }
     }
 
     private Transform GetOrCreateChild(string childName)
@@ -169,5 +220,18 @@ public sealed class GameSceneBootstrap : MonoBehaviour
         {
             cameraObject.AddComponent(cameraDataType);
         }
+    }
+
+    private void MarkSceneDirty()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        UnityEditor.EditorUtility.SetDirty(gameObject);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
     }
 }

@@ -51,6 +51,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 ## UI Rules
 
 - UI must be comfortable for both editing and playing.
+- Primary gameplay UI should exist as scene or prefab objects visible in Edit Mode. Runtime scripts should use serialized references and only populate dynamic content.
 - Use anchors, layout groups, content size fitters, and prefabs where they reduce manual layout work.
 - Keep important UI elements readable at common desktop resolutions.
 - Avoid overlapping text, tiny click targets, and layout that breaks when labels or numbers change.
