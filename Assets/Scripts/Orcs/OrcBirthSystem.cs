@@ -79,29 +79,6 @@ public sealed class OrcBirthSystem : MonoBehaviour
         return changed;
     }
 
-    public bool ConfigureUi(OrcBirthUiReferences uiReferences)
-    {
-        bool changed =
-            _canvas != uiReferences.Canvas ||
-            _availableDiceRoot != uiReferences.AvailableDiceRoot ||
-            _selectedDiceRoot != uiReferences.SelectedDiceRoot ||
-            _diceButtonTemplate != uiReferences.DiceButtonTemplate ||
-            _selectedDiceLabel != uiReferences.SelectedDiceLabel ||
-            _statusText != uiReferences.StatusText ||
-            _orcInfoText != uiReferences.OrcInfoText ||
-            _createOrcButton != uiReferences.CreateOrcButton;
-
-        _canvas = uiReferences.Canvas;
-        _availableDiceRoot = uiReferences.AvailableDiceRoot;
-        _selectedDiceRoot = uiReferences.SelectedDiceRoot;
-        _diceButtonTemplate = uiReferences.DiceButtonTemplate;
-        _selectedDiceLabel = uiReferences.SelectedDiceLabel;
-        _statusText = uiReferences.StatusText;
-        _orcInfoText = uiReferences.OrcInfoText;
-        _createOrcButton = uiReferences.CreateOrcButton;
-        return changed;
-    }
-
     private void Initialize()
     {
         if (_initialized)

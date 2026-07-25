@@ -25,6 +25,10 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Use existing packages and Unity systems already present in the project before adding new dependencies.
 - Before implementing or changing gameplay mechanics, read `docs/game-description.md` and keep the implementation consistent with it.
 - If mechanic rules change during implementation, update `docs/game-description.md` in the same change.
+- Static scene content must be authored in scenes or prefabs before Play Mode. Runtime/bootstrap code must not create or reconstruct scene objects, UI panels, cameras, terrain, buildings, colliders, labels, or required systems.
+- If a static scene object is absent, treat it as intentionally absent or as a scene setup error. Do not recreate it automatically from code.
+- Bootstrap scripts may validate serialized references and configure existing components, but they must not call `new GameObject`, `AddComponent`, scene hierarchy builders, or broad scene searches to repair the scene.
+- Do not add editor menu builders that generate the static game scene hierarchy. Build and adjust scene objects directly in the scene/prefabs.
 
 ## Config Workflow
 
