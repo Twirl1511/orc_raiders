@@ -15,10 +15,10 @@ public sealed class RaidPanelView : MonoBehaviour
     private TextMeshProUGUI _titleText;
     private TextMeshProUGUI _statusText;
     private TextMeshProUGUI _timerText;
-    private TextMeshProUGUI _orcNameText;
-    private Image _orcHpFill;
-    private Image _orcAttackFill;
-    private RectTransform _orcHpBarRoot;
+    private TextMeshProUGUI _heroNameText;
+    private Image _heroHpFill;
+    private Image _heroAttackFill;
+    private RectTransform _heroHpBarRoot;
     private RectTransform _enemyRowsRoot;
     private TextMeshProUGUI _enemyAreaMessage;
     private TextMeshProUGUI _logText;
@@ -71,9 +71,9 @@ public sealed class RaidPanelView : MonoBehaviour
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = "Исчезнет через";
         _timerText.text = FormatTimer(remainingSeconds);
-        _orcNameText.text = "Перетащи орка сюда";
-        SetBarFill(_orcHpFill, 0f);
-        SetBarFill(_orcAttackFill, 0f);
+        _heroNameText.text = "Назначь героя";
+        SetBarFill(_heroHpFill, 0f);
+        SetBarFill(_heroAttackFill, 0f);
         SetRaidProgress(0, 0, 0f);
         ClearEnemies();
         HideEnemyAreaMessage();
@@ -85,10 +85,10 @@ public sealed class RaidPanelView : MonoBehaviour
         int raidNumber,
         int battleNumber,
         int battleCount,
-        string orcName,
-        float orcHp,
-        float orcMaxHp,
-        float orcAttackProgress,
+        string heroName,
+        float heroHp,
+        float heroMaxHp,
+        float heroAttackProgress,
         int killedEnemies,
         int totalEnemies,
         float raidProgress,
@@ -100,9 +100,9 @@ public sealed class RaidPanelView : MonoBehaviour
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = $"Бой {battleNumber}/{battleCount}";
         _timerText.text = "";
-        _orcNameText.text = $"{orcName}  {Mathf.CeilToInt(orcHp)}/{Mathf.CeilToInt(orcMaxHp)} HP";
-        SetBarFill(_orcHpFill, GetRatio(orcHp, orcMaxHp));
-        SetBarFill(_orcAttackFill, orcAttackProgress);
+        _heroNameText.text = $"{heroName}  {Mathf.CeilToInt(heroHp)}/{Mathf.CeilToInt(heroMaxHp)} HP";
+        SetBarFill(_heroHpFill, GetRatio(heroHp, heroMaxHp));
+        SetBarFill(_heroAttackFill, heroAttackProgress);
         SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         SetEnemies(enemies);
         HideEnemyAreaMessage();
@@ -114,9 +114,9 @@ public sealed class RaidPanelView : MonoBehaviour
         int raidNumber,
         int nextBattleNumber,
         int battleCount,
-        string orcName,
-        float orcHp,
-        float orcMaxHp,
+        string heroName,
+        float heroHp,
+        float heroMaxHp,
         float raidProgress,
         int killedEnemies,
         int totalEnemies,
@@ -128,9 +128,9 @@ public sealed class RaidPanelView : MonoBehaviour
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = completeAfterLoot ? "Собирает лут" : $"К группе {nextBattleNumber}/{battleCount}";
         _timerText.text = "";
-        _orcNameText.text = $"{orcName}  {Mathf.CeilToInt(orcHp)}/{Mathf.CeilToInt(orcMaxHp)} HP";
-        SetBarFill(_orcHpFill, GetRatio(orcHp, orcMaxHp));
-        SetBarFill(_orcAttackFill, 0f);
+        _heroNameText.text = $"{heroName}  {Mathf.CeilToInt(heroHp)}/{Mathf.CeilToInt(heroMaxHp)} HP";
+        SetBarFill(_heroHpFill, GetRatio(heroHp, heroMaxHp));
+        SetBarFill(_heroAttackFill, 0f);
         SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         ClearEnemies();
         ShowEnemyAreaMessage("Собирает лут");
@@ -144,7 +144,7 @@ public sealed class RaidPanelView : MonoBehaviour
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = success ? "Завершен" : "Провален";
         _timerText.text = "";
-        SetBarFill(_orcAttackFill, 0f);
+        SetBarFill(_heroAttackFill, 0f);
         SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
         ClearEnemies();
         HideEnemyAreaMessage();
@@ -152,7 +152,7 @@ public sealed class RaidPanelView : MonoBehaviour
         _closeButton.gameObject.SetActive(true);
     }
 
-    public IEnumerator PlayOrcAttackEffect(int enemyIndex)
+    public IEnumerator PlayHeroAttackEffect(int enemyIndex)
     {
         BuildIfNeeded();
 
@@ -175,9 +175,9 @@ public sealed class RaidPanelView : MonoBehaviour
         _effectParticle.gameObject.SetActive(false);
     }
 
-    public IEnumerator ShakeOrcHpBar()
+    public IEnumerator ShakeHeroHpBar()
     {
-        yield return ShakeRect(_orcHpBarRoot, 5f, 0.16f);
+        yield return ShakeRect(_heroHpBarRoot, 5f, 0.16f);
     }
 
     public IEnumerator ShakeEnemyHpBar(int enemyIndex)
@@ -213,11 +213,11 @@ public sealed class RaidPanelView : MonoBehaviour
         }
 
         _titleText = CreateText("Title", "Рейд", new Vector2(16f, -12f), new Vector2(110f, 34f), 24f, TextAlignmentOptions.Left);
-        _statusText = CreateText("Status", "Ожидает орка", new Vector2(142f, -14f), new Vector2(160f, 30f), 16f, TextAlignmentOptions.Center);
+        _statusText = CreateText("Status", "Ожидает героя", new Vector2(142f, -14f), new Vector2(160f, 30f), 16f, TextAlignmentOptions.Center);
         _timerText = CreateText("Timer", "00:00", new Vector2(320f, -14f), new Vector2(100f, 30f), 16f, TextAlignmentOptions.Right);
-        _orcNameText = CreateText("Orc HP Label", "Перетащи орка сюда", new Vector2(20f, -58f), new Vector2(175f, 30f), 15f, TextAlignmentOptions.Left);
-        _orcHpBarRoot = CreateBar("Orc HP", new Vector2(20f, -86f), new Vector2(175f, 24f), new Color(0.17f, 0.2f, 0.22f, 1f), new Color(0.45f, 0.9f, 0.45f, 1f), out _orcHpFill);
-        CreateBar("Orc Attack", new Vector2(20f, -116f), new Vector2(175f, 8f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _orcAttackFill);
+        _heroNameText = CreateText("Hero HP Label", "Назначь героя", new Vector2(20f, -58f), new Vector2(175f, 30f), 15f, TextAlignmentOptions.Left);
+        _heroHpBarRoot = CreateBar("Hero HP", new Vector2(20f, -86f), new Vector2(175f, 24f), new Color(0.17f, 0.2f, 0.22f, 1f), new Color(0.45f, 0.9f, 0.45f, 1f), out _heroHpFill);
+        CreateBar("Hero Attack", new Vector2(20f, -116f), new Vector2(175f, 8f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _heroAttackFill);
 
         _enemyRowsRoot = CreateRect("Enemies", new Vector2(212f, -58f), new Vector2(208f, 150f));
         _enemyAreaMessage = CreateText(_enemyRowsRoot, "Enemy Area Message", "Собирает лут", new Vector2(0f, -42f), new Vector2(208f, 64f), 18f, TextAlignmentOptions.Center);
@@ -229,7 +229,7 @@ public sealed class RaidPanelView : MonoBehaviour
         _closeButton.onClick.AddListener(HandleCloseClicked);
         _closeButton.gameObject.SetActive(false);
         _effectRoot = CreateRect("Effects", Vector2.zero, _root.sizeDelta);
-        _effectParticle = CreateImage("Orc Attack Particle", _effectRoot, new Vector2(0f, 0f), new Vector2(14f, 14f), new Color(1f, 0.86f, 0.2f, 1f));
+        _effectParticle = CreateImage("Hero Attack Particle", _effectRoot, new Vector2(0f, 0f), new Vector2(14f, 14f), new Color(1f, 0.86f, 0.2f, 1f));
         _effectParticle.gameObject.SetActive(false);
     }
 
@@ -413,7 +413,7 @@ public sealed class RaidPanelView : MonoBehaviour
         int safeTotal = Mathf.Max(0, totalEnemies);
         int safeKilled = Mathf.Clamp(killedEnemies, 0, safeTotal);
         _raidProgressText.text = safeTotal <= 0
-            ? "Прогресс рейда: ждет орка"
+            ? "Прогресс рейда: ждет героя"
             : $"Прогресс рейда: {safeKilled}/{safeTotal}";
         SetBarFill(_raidProgressFill, progressRatio);
     }

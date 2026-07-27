@@ -13,7 +13,7 @@ public sealed class RaidSystem : MonoBehaviour
     [SerializeField] private StatsConfig _statsConfig = null;
 
     [Header("Scene References")]
-    [SerializeField] private OrcBirthSystem _orcBirthSystem = null;
+    [SerializeField] private NecropolisSystem _necropolisSystem = null;
     [SerializeField] private Canvas _canvas = null;
     [SerializeField] private RectTransform _panelsRoot = null;
     [SerializeField] private RaidPanelView _panelTemplate = null;
@@ -70,9 +70,9 @@ public sealed class RaidSystem : MonoBehaviour
         }
     }
 
-    public bool TryAcceptDroppedOrc(OrcRuntimeData orcData, Vector2 screenPosition)
+    public bool TryAcceptDroppedHero(HeroRuntimeData heroData, Vector2 screenPosition)
     {
-        if (!_initialized || orcData == null)
+        if (!_initialized || heroData == null)
         {
             return false;
         }
@@ -83,7 +83,7 @@ public sealed class RaidSystem : MonoBehaviour
 
             if (raid.State == RaidState.Waiting && raid.Panel.ContainsScreenPoint(screenPosition, UiCamera))
             {
-                StartRaid(raid, orcData);
+                StartRaid(raid, heroData);
                 return true;
             }
         }
@@ -128,7 +128,7 @@ public sealed class RaidSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(RaidSystem)} requires {nameof(StatsConfig)}.");
         }
 
-        if (_orcBirthSystem == null || _canvas == null || _panelsRoot == null || _panelTemplate == null ||
+        if (_necropolisSystem == null || _canvas == null || _panelsRoot == null || _panelTemplate == null ||
             _goldText == null || _spawnRaidButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(RaidSystem)} requires scene references.");
@@ -250,12 +250,12 @@ public sealed class RaidSystem : MonoBehaviour
         RefreshWaitingRaidUi(raid);
     }
 
-    private void StartRaid(RaidRuntimeData raid, OrcRuntimeData orcData)
+    private void StartRaid(RaidRuntimeData raid, HeroRuntimeData heroData)
     {
         raid.State = RaidState.InProgress;
-        raid.Orc = orcData;
-        RefreshRaidOrcCombatStats(raid);
-        raid.OrcAttackProgress = 0f;
+        raid.Hero = heroData;
+        RefreshRaidHeroCombatStats(raid);
+        raid.HeroAttackProgress = 0f;
         raid.KilledEnemies = 0;
         raid.ExperienceGained = 0;
         raid.TotalGold = Random.Range(_raidConfig.MinGoldReward, _raidConfig.MaxGoldReward + 1);
@@ -269,7 +269,7 @@ public sealed class RaidSystem : MonoBehaviour
         GenerateEnemies(raid);
         BuildRaidProgressTimeline(raid);
         BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
-        _orcBirthSystem.SetOrcState(orcData, OrcActivityState.InRaid);
+        _necropolisSystem.SetHeroState(heroData, HeroActivityState.InRaid);
         RefreshRaidBattleUi(raid);
     }
 
@@ -381,14 +381,14 @@ public sealed class RaidSystem : MonoBehaviour
     private float EstimateBattleProgressSegmentSeconds(RaidRuntimeData raid, int startIndex, int endIndex)
     {
         int attacksNeeded = 0;
-        float damage = Mathf.Max(1f, raid.OrcDamage);
+        float damage = Mathf.Max(1f, raid.HeroDamage);
 
         for (int i = startIndex; i < endIndex; i++)
         {
             attacksNeeded += Mathf.Max(1, Mathf.CeilToInt(raid.Enemies[i].MaxHp / damage));
         }
 
-        return Mathf.Max(_minimumProgressSegmentSeconds, attacksNeeded * Mathf.Max(0.01f, raid.OrcAttackInterval));
+        return Mathf.Max(_minimumProgressSegmentSeconds, attacksNeeded * Mathf.Max(0.01f, raid.HeroAttackInterval));
     }
 
     private void BeginProgressSegment(RaidRuntimeData raid, int segmentIndex)
@@ -457,7 +457,7 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void UpdateRaidBattle(RaidRuntimeData raid, float deltaTime)
     {
-        if (raid.OrcHp <= 0f)
+        if (raid.HeroHp <= 0f)
         {
             CompleteRaid(raid, false);
             return;
@@ -470,7 +470,7 @@ public sealed class RaidSystem : MonoBehaviour
         }
 
         AdvanceRaidProgressSegmentTimer(raid, deltaTime);
-        UpdateOrcAttack(raid, deltaTime);
+        UpdateHeroAttack(raid, deltaTime);
         UpdateEnemyAttacks(raid, deltaTime);
 
         if (raid.State != RaidState.InProgress)
@@ -487,16 +487,16 @@ public sealed class RaidSystem : MonoBehaviour
         RefreshRaidBattleUi(raid);
     }
 
-    private void UpdateOrcAttack(RaidRuntimeData raid, float deltaTime)
+    private void UpdateHeroAttack(RaidRuntimeData raid, float deltaTime)
     {
-        raid.OrcAttackProgress += deltaTime / raid.OrcAttackInterval;
+        raid.HeroAttackProgress += deltaTime / raid.HeroAttackInterval;
 
-        if (raid.OrcAttackProgress < 1f)
+        if (raid.HeroAttackProgress < 1f)
         {
             return;
         }
 
-        raid.OrcAttackProgress = 0f;
+        raid.HeroAttackProgress = 0f;
         EnemyRuntimeData target = GetFirstAliveEnemyInCurrentBattle(raid, out int enemyIndexInBattle);
 
         if (target == null)
@@ -505,18 +505,18 @@ public sealed class RaidSystem : MonoBehaviour
         }
 
         float hpBeforeAttack = target.Hp;
-        target.Hp = Mathf.Max(0f, target.Hp - raid.OrcDamage);
+        target.Hp = Mathf.Max(0f, target.Hp - raid.HeroDamage);
 
         if (hpBeforeAttack > 0f && target.Hp <= 0f)
         {
             raid.KilledEnemies++;
             raid.ExperienceGained += target.ExperienceReward;
-            _orcBirthSystem.AddExperienceToOrc(raid.Orc, target.ExperienceReward);
-            RefreshRaidOrcCombatStats(raid);
+            _necropolisSystem.AddExperienceToHero(raid.Hero, target.ExperienceReward);
+            RefreshRaidHeroCombatStats(raid);
             QueueGoldForKill(raid);
         }
 
-        StartCoroutine(raid.Panel.PlayOrcAttackEffect(enemyIndexInBattle));
+        StartCoroutine(raid.Panel.PlayHeroAttackEffect(enemyIndexInBattle));
         StartCoroutine(raid.Panel.ShakeEnemyHpBar(enemyIndexInBattle));
     }
 
@@ -541,13 +541,13 @@ public sealed class RaidSystem : MonoBehaviour
             }
 
             enemy.AttackProgress = 0f;
-            float blockedDamagePercent = _statsConfig.CalculateArmorBlockedDamagePercent(raid.OrcSecondaryStats.Armor);
+            float blockedDamagePercent = _statsConfig.CalculateArmorBlockedDamagePercent(raid.HeroSecondaryStats.Armor);
             float damageMultiplier = Mathf.Clamp01(1f - blockedDamagePercent / 100f);
-            raid.OrcHp = Mathf.Max(0f, raid.OrcHp - Mathf.Max(1f, enemy.Damage * damageMultiplier));
-            raid.Orc.SetCurrentHp(raid.OrcHp);
-            StartCoroutine(raid.Panel.ShakeOrcHpBar());
+            raid.HeroHp = Mathf.Max(0f, raid.HeroHp - Mathf.Max(1f, enemy.Damage * damageMultiplier));
+            raid.Hero.SetCurrentHp(raid.HeroHp);
+            StartCoroutine(raid.Panel.ShakeHeroHpBar());
 
-            if (raid.OrcHp <= 0f)
+            if (raid.HeroHp <= 0f)
             {
                 CompleteRaid(raid, false);
                 return;
@@ -563,7 +563,7 @@ public sealed class RaidSystem : MonoBehaviour
         raid.State = RaidState.BattleTransition;
         raid.BattleTransitionTimer = 0f;
         raid.BattleTransitionSeconds = _raidConfig.BattleTransitionDelaySeconds;
-        raid.OrcAttackProgress = 0f;
+        raid.HeroAttackProgress = 0f;
         BeginProgressSegment(raid, GetTransitionProgressSegmentIndex(raid.CurrentBattleNumber));
         BeginLootGoldCollection(raid);
 
@@ -600,7 +600,7 @@ public sealed class RaidSystem : MonoBehaviour
         raid.State = RaidState.InProgress;
         raid.CurrentBattleNumber++;
         raid.CurrentBattleStartIndex = GetBattleStartIndex(raid, raid.CurrentBattleNumber);
-        raid.OrcAttackProgress = 0f;
+        raid.HeroAttackProgress = 0f;
         raid.BattleTransitionTimer = 0f;
         raid.CompleteAfterLoot = false;
         BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
@@ -632,37 +632,37 @@ public sealed class RaidSystem : MonoBehaviour
             raid.KilledEnemies = raid.Enemies.Count;
             CompleteLootGoldCollection(raid);
             CompleteAllProgressSegments(raid);
-            raid.RewardDice = _orcBirthSystem.AddRandomDiceFromConfigToPool();
+            raid.RewardDice = _necropolisSystem.AddRandomDiceFromConfigToPool();
         }
 
         _gold += raid.GoldFound;
         RefreshGoldText();
 
-        if (raid.Orc != null)
+        if (raid.Hero != null)
         {
-            raid.Orc.SetCurrentHp(raid.OrcHp);
-            _orcBirthSystem.SetOrcState(raid.Orc, success ? OrcActivityState.OnBase : OrcActivityState.Resting);
+            raid.Hero.SetCurrentHp(raid.HeroHp);
+            _necropolisSystem.SetHeroState(raid.Hero, success ? HeroActivityState.OnBase : HeroActivityState.Resting);
         }
 
-        string message = success ? GetSuccessMessage(raid) : "Орк проиграл бой и ушел отдыхать.";
+        string message = success ? GetSuccessMessage(raid) : "Герой проиграл бой и ушел отдыхать.";
         raid.Panel.ShowCompleted(raid.Id, success, message, raid.KilledEnemies, raid.Enemies.Count, GetRaidProgressRatio(raid), raid.GoldFound, raid.ExperienceGained);
     }
 
     private static string GetSuccessMessage(RaidRuntimeData raid)
     {
-        string message = "Орк прошел рейд и вернулся на базу.";
+        string message = "Герой прошел рейд и вернулся на базу.";
 
         if (raid.RewardDice != null)
         {
-            message += $"\nНайден кубик: {raid.RewardDice.DisplayName}";
+            message += $"\nНайдена кость: {raid.RewardDice.DisplayName}";
         }
 
         return message;
     }
 
-    public void RefreshOrcCombatStats(OrcRuntimeData orcData)
+    public void RefreshHeroCombatStats(HeroRuntimeData heroData)
     {
-        if (!_initialized || orcData == null)
+        if (!_initialized || heroData == null)
         {
             return;
         }
@@ -671,12 +671,12 @@ public sealed class RaidSystem : MonoBehaviour
         {
             RaidRuntimeData raid = _raids[i];
 
-            if (raid.Orc != orcData || raid.State == RaidState.Waiting || raid.State == RaidState.Completed)
+            if (raid.Hero != heroData || raid.State == RaidState.Waiting || raid.State == RaidState.Completed)
             {
                 continue;
             }
 
-            RefreshRaidOrcCombatStats(raid);
+            RefreshRaidHeroCombatStats(raid);
 
             if (raid.State == RaidState.BattleTransition)
             {
@@ -781,10 +781,10 @@ public sealed class RaidSystem : MonoBehaviour
             raid.Id,
             raid.CurrentBattleNumber,
             raid.BattleCount,
-            raid.Orc.Name,
-            raid.OrcHp,
-            raid.OrcMaxHp,
-            raid.OrcAttackProgress,
+            raid.Hero.Name,
+            raid.HeroHp,
+            raid.HeroMaxHp,
+            raid.HeroAttackProgress,
             raid.KilledEnemies,
             raid.Enemies.Count,
             GetRaidProgressRatio(raid),
@@ -799,9 +799,9 @@ public sealed class RaidSystem : MonoBehaviour
             raid.Id,
             raid.CurrentBattleNumber + 1,
             raid.BattleCount,
-            raid.Orc.Name,
-            raid.OrcHp,
-            raid.OrcMaxHp,
+            raid.Hero.Name,
+            raid.HeroHp,
+            raid.HeroMaxHp,
             GetRaidProgressRatio(raid),
             raid.KilledEnemies,
             raid.Enemies.Count,
@@ -851,19 +851,19 @@ public sealed class RaidSystem : MonoBehaviour
         _goldText.text = $"Золото: {_gold}";
     }
 
-    private void RefreshRaidOrcCombatStats(RaidRuntimeData raid)
+    private void RefreshRaidHeroCombatStats(RaidRuntimeData raid)
     {
-        raid.OrcSecondaryStats = _statsConfig.CalculateSecondaryStats(raid.Orc.Stats);
-        raid.Orc.SetMaxHp(Mathf.Max(1f, raid.OrcSecondaryStats.MaxHp), false);
-        raid.OrcMaxHp = raid.Orc.MaxHp;
-        raid.OrcHp = Mathf.Clamp(raid.Orc.CurrentHp, 0f, raid.OrcMaxHp);
-        raid.OrcAttackInterval = Mathf.Max(0.01f, raid.OrcSecondaryStats.AttackSpeed);
-        raid.OrcDamage = Mathf.Max(1f, raid.OrcSecondaryStats.MeleeDamage);
+        raid.HeroSecondaryStats = _statsConfig.CalculateSecondaryStats(raid.Hero.Stats);
+        raid.Hero.SetMaxHp(Mathf.Max(1f, raid.HeroSecondaryStats.MaxHp), false);
+        raid.HeroMaxHp = raid.Hero.MaxHp;
+        raid.HeroHp = Mathf.Clamp(raid.Hero.CurrentHp, 0f, raid.HeroMaxHp);
+        raid.HeroAttackInterval = Mathf.Max(0.01f, raid.HeroSecondaryStats.AttackSpeed);
+        raid.HeroDamage = Mathf.Max(1f, raid.HeroSecondaryStats.MeleeDamage);
     }
 
     private float CalculateEnemyMaxHp(EnemyDefinition definition, SecondaryStatsSnapshot secondaryStats)
     {
-        float sharedMinimumHp = _statsConfig.GetSecondaryStatMinimumValue(OrcSecondaryStatType.MaxHp);
+        float sharedMinimumHp = _statsConfig.GetSecondaryStatMinimumValue(SecondaryStatType.MaxHp);
         float statBonusHp = secondaryStats.MaxHp - sharedMinimumHp;
         return Mathf.Max(1f, definition.MinimumHp + statBonusHp);
     }
@@ -945,13 +945,13 @@ public sealed class RaidSystem : MonoBehaviour
 
         public RaidState State;
         public float WaitingSeconds;
-        public OrcRuntimeData Orc;
-        public SecondaryStatsSnapshot OrcSecondaryStats;
-        public float OrcHp;
-        public float OrcMaxHp;
-        public float OrcDamage;
-        public float OrcAttackInterval;
-        public float OrcAttackProgress;
+        public HeroRuntimeData Hero;
+        public SecondaryStatsSnapshot HeroSecondaryStats;
+        public float HeroHp;
+        public float HeroMaxHp;
+        public float HeroDamage;
+        public float HeroAttackInterval;
+        public float HeroAttackProgress;
         public int CurrentBattleStartIndex;
         public int CurrentBattleNumber;
         public int BattleCount;

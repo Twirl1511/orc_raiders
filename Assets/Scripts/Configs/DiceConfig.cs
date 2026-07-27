@@ -119,17 +119,17 @@ public sealed class DiceFaceDefinition
         return hasAdd ? _add.GetDisplayText("+") : _remove.GetDisplayText("-");
     }
 
-    public static string GetStatDisplayName(OrcStatType statType)
+    public static string GetStatDisplayName(PrimaryStatType statType)
     {
         switch (statType)
         {
-            case OrcStatType.Endurance:
+            case PrimaryStatType.Endurance:
                 return "выносливость";
-            case OrcStatType.Strength:
+            case PrimaryStatType.Strength:
                 return "сила";
-            case OrcStatType.Agility:
+            case PrimaryStatType.Agility:
                 return "ловкость";
-            case OrcStatType.Intelligence:
+            case PrimaryStatType.Intelligence:
                 return "интеллект";
             default:
                 return "нет";
@@ -140,16 +140,16 @@ public sealed class DiceFaceDefinition
 [Serializable]
 public struct DiceStatChange
 {
-    public static readonly DiceStatChange Empty = new DiceStatChange(OrcStatType.None, 0);
+    public static readonly DiceStatChange Empty = new DiceStatChange(PrimaryStatType.None, 0);
 
-    [SerializeField] private OrcStatType _statType;
+    [SerializeField] private PrimaryStatType _statType;
     [SerializeField, Min(0)] private int _value;
 
-    public OrcStatType StatType => _statType;
+    public PrimaryStatType StatType => _statType;
     public int Value => _value;
-    public bool HasValue => _statType != OrcStatType.None && _value > 0;
+    public bool HasValue => _statType != PrimaryStatType.None && _value > 0;
 
-    public DiceStatChange(OrcStatType statType, int value)
+    public DiceStatChange(PrimaryStatType statType, int value)
     {
         _statType = statType;
         _value = Mathf.Max(0, value);

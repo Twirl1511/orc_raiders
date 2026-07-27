@@ -1,30 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum OrcActivityState
+public enum HeroActivityState
 {
     OnBase = 0,
     Resting = 1,
     InRaid = 2
 }
 
-public sealed class OrcRuntimeData
+public sealed class HeroRuntimeData
 {
     private readonly List<string> _rollTexts;
 
-    public OrcRuntimeData(string name, OrcStats stats, List<string> rollTexts, float maxHp)
+    public HeroRuntimeData(string name, PrimaryStats stats, List<string> rollTexts, float maxHp)
     {
         Name = name;
         Stats = stats;
         _rollTexts = rollTexts ?? new List<string>();
-        State = OrcActivityState.OnBase;
+        State = HeroActivityState.OnBase;
         SetMaxHp(maxHp, true);
     }
 
     public string Name { get; }
-    public OrcStats Stats { get; }
+    public PrimaryStats Stats { get; }
     public IReadOnlyList<string> RollTexts => _rollTexts;
-    public OrcActivityState State { get; private set; }
+    public HeroActivityState State { get; private set; }
     public GameObject ViewObject { get; private set; }
     public Vector2 MapPosition { get; private set; }
     public float CurrentHp { get; private set; }
@@ -39,7 +39,7 @@ public sealed class OrcRuntimeData
         ViewObject = viewObject;
     }
 
-    public void SetState(OrcActivityState state)
+    public void SetState(HeroActivityState state)
     {
         State = state;
     }
@@ -95,9 +95,9 @@ public sealed class OrcRuntimeData
         }
     }
 
-    public bool CanSpendFreePrimaryStatPoint(OrcStatType statType, StatsConfig statsConfig)
+    public bool CanSpendFreePrimaryStatPoint(PrimaryStatType statType, StatsConfig statsConfig)
     {
-        if (FreePrimaryStatPoints <= 0 || statType == OrcStatType.None)
+        if (FreePrimaryStatPoints <= 0 || statType == PrimaryStatType.None)
         {
             return false;
         }
@@ -110,7 +110,7 @@ public sealed class OrcRuntimeData
         return Stats.GetValue(statType) < statsConfig.MaxPrimaryStatValue;
     }
 
-    public bool TrySpendFreePrimaryStatPoint(OrcStatType statType, StatsConfig statsConfig)
+    public bool TrySpendFreePrimaryStatPoint(PrimaryStatType statType, StatsConfig statsConfig)
     {
         if (!CanSpendFreePrimaryStatPoint(statType, statsConfig))
         {
@@ -140,11 +140,11 @@ public sealed class OrcRuntimeData
     {
         switch (State)
         {
-            case OrcActivityState.OnBase:
+            case HeroActivityState.OnBase:
                 return "На базе";
-            case OrcActivityState.Resting:
+            case HeroActivityState.Resting:
                 return "Отдыхает";
-            case OrcActivityState.InRaid:
+            case HeroActivityState.InRaid:
                 return "В рейде";
             default:
                 return State.ToString();

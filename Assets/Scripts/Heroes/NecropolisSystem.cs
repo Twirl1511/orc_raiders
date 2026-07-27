@@ -5,21 +5,21 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public sealed class OrcBirthSystem : MonoBehaviour
+public sealed class NecropolisSystem : MonoBehaviour
 {
-    private const int _orcInfoHpBarCells = 14;
+    private const int _heroInfoHpBarCells = 14;
     private const char _filledHpCell = '#';
     private const char _emptyHpCell = '-';
     private static readonly Vector2 _primaryStatUpgradeButtonSize = new Vector2(20f, 18f);
-    private static readonly Color _selectedOrcOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
-    private static readonly Vector2 _selectedOrcOutlinePadding = new Vector2(0.14f, 0.14f);
-    private const float _orcLabelScale = 0.25f;
+    private static readonly Color _selectedHeroOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
+    private static readonly Vector2 _selectedHeroOutlinePadding = new Vector2(0.14f, 0.14f);
+    private const float _heroLabelScale = 0.25f;
     private const float _primaryStatUpgradeButtonXRatio = 0.37f;
     private const int _primaryStatLineIndexWithoutFreeStats = 4;
     private const int _primaryStatLineIndexWithFreeStats = 5;
 
     [Header("Config")]
-    [SerializeField] private OrcBirthConfig _config = null;
+    [SerializeField] private NecropolisConfig _config = null;
     [SerializeField] private Camera _camera = null;
 
     [Header("Scene UI")]
@@ -29,9 +29,9 @@ public sealed class OrcBirthSystem : MonoBehaviour
     [SerializeField] private Button _diceButtonTemplate = null;
     [SerializeField] private TextMeshProUGUI _selectedDiceLabel = null;
     [SerializeField] private TextMeshProUGUI _statusText = null;
-    [SerializeField] private TextMeshProUGUI _orcInfoTitle = null;
-    [SerializeField] private TextMeshProUGUI _orcInfoText = null;
-    [SerializeField] private Button _createOrcButton = null;
+    [SerializeField] private TextMeshProUGUI _heroInfoTitle = null;
+    [SerializeField] private TextMeshProUGUI _heroInfoText = null;
+    [SerializeField] private Button _createHeroButton = null;
 
     [Header("Primary Stat Upgrade Buttons")]
     [SerializeField] private Button _enduranceUpgradeButton = null;
@@ -48,21 +48,21 @@ public sealed class OrcBirthSystem : MonoBehaviour
     private readonly List<DiceRuntimeData> _availableDice = new List<DiceRuntimeData>();
     private readonly List<DiceRuntimeData> _selectedDice = new List<DiceRuntimeData>();
     private readonly List<GameObject> _runtimeDiceButtons = new List<GameObject>();
-    private readonly List<OrcRuntimeData> _orcs = new List<OrcRuntimeData>();
-    private readonly Dictionary<GameObject, OrcRuntimeData> _orcDataByObject = new Dictionary<GameObject, OrcRuntimeData>();
-    private readonly Dictionary<OrcRuntimeData, GameObject> _selectionOutlineByOrc = new Dictionary<OrcRuntimeData, GameObject>();
-    private readonly Dictionary<OrcRuntimeData, OrcMapHealthBar> _healthBarByOrc = new Dictionary<OrcRuntimeData, OrcMapHealthBar>();
-    private readonly Dictionary<OrcRuntimeData, OrcMapVisual> _mapVisualByOrc = new Dictionary<OrcRuntimeData, OrcMapVisual>();
-    private readonly Dictionary<OrcRuntimeData, float> _restHealTimers = new Dictionary<OrcRuntimeData, float>();
+    private readonly List<HeroRuntimeData> _heroes = new List<HeroRuntimeData>();
+    private readonly Dictionary<GameObject, HeroRuntimeData> _heroDataByObject = new Dictionary<GameObject, HeroRuntimeData>();
+    private readonly Dictionary<HeroRuntimeData, GameObject> _selectionOutlineByHero = new Dictionary<HeroRuntimeData, GameObject>();
+    private readonly Dictionary<HeroRuntimeData, HeroMapHealthBar> _healthBarByHero = new Dictionary<HeroRuntimeData, HeroMapHealthBar>();
+    private readonly Dictionary<HeroRuntimeData, HeroMapVisual> _mapVisualByHero = new Dictionary<HeroRuntimeData, HeroMapVisual>();
+    private readonly Dictionary<HeroRuntimeData, float> _restHealTimers = new Dictionary<HeroRuntimeData, float>();
 
     private Sprite _whiteSprite;
-    private OrcRuntimeData _selectedOrc;
-    private OrcRuntimeData _draggedOrc;
+    private HeroRuntimeData _selectedHero;
+    private HeroRuntimeData _draggedHero;
     private Vector3 _dragOffset;
-    private int _nextOrcId = 1;
+    private int _nextHeroId = 1;
     private bool _initialized;
 
-    public IReadOnlyList<OrcRuntimeData> Orcs => _orcs;
+    public IReadOnlyList<HeroRuntimeData> Heroes => _heroes;
 
     private void Start()
     {
@@ -76,9 +76,9 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void OnDisable()
     {
-        if (_createOrcButton != null)
+        if (_createHeroButton != null)
         {
-            _createOrcButton.onClick.RemoveListener(CreateOrc);
+            _createHeroButton.onClick.RemoveListener(CreateHero);
         }
 
         RemovePrimaryStatUpgradeListeners();
@@ -91,7 +91,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
             return;
         }
 
-        UpdateRestingOrcs(Time.deltaTime);
+        UpdateRestingHeroes(Time.deltaTime);
 
         if (_camera == null || Mouse.current == null)
         {
@@ -100,21 +100,21 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            TryBeginOrcDrag();
+            TryBeginHeroDrag();
         }
 
-        if (_draggedOrc != null && Mouse.current.leftButton.isPressed)
+        if (_draggedHero != null && Mouse.current.leftButton.isPressed)
         {
-            UpdateOrcDrag();
+            UpdateHeroDrag();
         }
 
-        if (_draggedOrc != null && Mouse.current.leftButton.wasReleasedThisFrame)
+        if (_draggedHero != null && Mouse.current.leftButton.wasReleasedThisFrame)
         {
-            EndOrcDrag();
+            EndHeroDrag();
         }
     }
 
-    public bool Configure(OrcBirthConfig config, Camera sceneCamera)
+    public bool Configure(NecropolisConfig config, Camera sceneCamera)
     {
         bool changed = _config != config || _camera != sceneCamera;
         _config = config;
@@ -122,43 +122,43 @@ public sealed class OrcBirthSystem : MonoBehaviour
         return changed;
     }
 
-    public void SetOrcState(OrcRuntimeData orcData, OrcActivityState state)
+    public void SetHeroState(HeroRuntimeData heroData, HeroActivityState state)
     {
-        if (orcData == null || !_orcs.Contains(orcData))
+        if (heroData == null || !_heroes.Contains(heroData))
         {
             return;
         }
 
-        orcData.SetState(state);
+        heroData.SetState(state);
 
-        if (state != OrcActivityState.InRaid)
+        if (state != HeroActivityState.InRaid)
         {
-            orcData.SetMapPosition(GetDefaultOrcPositionForState(orcData, state));
+            heroData.SetMapPosition(GetDefaultHeroPositionForState(heroData, state));
         }
 
-        RefreshOrcAfterStateChange(orcData);
+        RefreshHeroAfterStateChange(heroData);
     }
 
-    public void AddExperienceToOrc(OrcRuntimeData orcData, int amount)
+    public void AddExperienceToHero(HeroRuntimeData heroData, int amount)
     {
-        if (orcData == null || !_orcs.Contains(orcData) || amount <= 0)
+        if (heroData == null || !_heroes.Contains(heroData) || amount <= 0)
         {
             return;
         }
 
-        int levelBefore = orcData.Level;
-        orcData.AddExperience(amount, _config.LevelUpConfig, _config.StatsConfig);
-        orcData.SetMaxHp(CalculateOrcMaxHp(orcData.Stats), false);
-        if (orcData.Level != levelBefore)
+        int levelBefore = heroData.Level;
+        heroData.AddExperience(amount, _config.LevelUpConfig, _config.StatsConfig);
+        heroData.SetMaxHp(CalculateHeroMaxHp(heroData.Stats), false);
+        if (heroData.Level != levelBefore)
         {
-            RefreshOrcMapVisualSize(orcData);
+            RefreshHeroMapVisualSize(heroData);
         }
 
-        RefreshOrcHealthBar(orcData);
+        RefreshHeroHealthBar(heroData);
 
-        if (_selectedOrc == orcData)
+        if (_selectedHero == heroData)
         {
-            ShowOrcInfo(orcData);
+            ShowHeroInfo(heroData);
         }
     }
 
@@ -173,35 +173,35 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         DiceDefinition rewardDice = configuredDice[Random.Range(0, configuredDice.Count)];
         _availableDice.Add(new DiceRuntimeData(rewardDice));
-        _statusText.text = $"Рейд принес кубик: {rewardDice.DisplayName}.";
+        _statusText.text = $"Рейд принес кость: {rewardDice.DisplayName}.";
         RefreshUi();
         return rewardDice;
     }
 
-    private void SetOrcStateAtPosition(OrcRuntimeData orcData, OrcActivityState state, Vector2 mapPosition)
+    private void SetHeroStateAtPosition(HeroRuntimeData heroData, HeroActivityState state, Vector2 mapPosition)
     {
-        if (orcData == null || !_orcs.Contains(orcData))
+        if (heroData == null || !_heroes.Contains(heroData))
         {
             return;
         }
 
-        orcData.SetState(state);
-        orcData.SetMapPosition(mapPosition);
-        RefreshOrcAfterStateChange(orcData);
+        heroData.SetState(state);
+        heroData.SetMapPosition(mapPosition);
+        RefreshHeroAfterStateChange(heroData);
     }
 
-    private void RefreshOrcAfterStateChange(OrcRuntimeData orcData)
+    private void RefreshHeroAfterStateChange(HeroRuntimeData heroData)
     {
-        if (orcData.State != OrcActivityState.Resting)
+        if (heroData.State != HeroActivityState.Resting)
         {
-            _restHealTimers.Remove(orcData);
+            _restHealTimers.Remove(heroData);
         }
 
-        RefreshOrcVisualStates();
+        RefreshHeroVisualStates();
 
-        if (_selectedOrc == orcData)
+        if (_selectedHero == heroData)
         {
-            ShowOrcInfo(orcData);
+            ShowHeroInfo(heroData);
         }
     }
 
@@ -217,8 +217,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
         _initialized = true;
         _whiteSprite = CreateWhiteSprite();
         _diceButtonTemplate.gameObject.SetActive(false);
-        _createOrcButton.onClick.RemoveListener(CreateOrc);
-        _createOrcButton.onClick.AddListener(CreateOrc);
+        _createHeroButton.onClick.RemoveListener(CreateHero);
+        _createHeroButton.onClick.AddListener(CreateHero);
         ConfigurePrimaryStatUpgradeButtonVisuals();
         AddPrimaryStatUpgradeListeners();
 
@@ -231,69 +231,69 @@ public sealed class OrcBirthSystem : MonoBehaviour
     {
         if (_config == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(OrcBirthConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(NecropolisConfig)}.");
         }
 
         if (_config.DiceConfig == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(DiceConfig)} in {nameof(OrcBirthConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(DiceConfig)} in {nameof(NecropolisConfig)}.");
         }
 
         if (_config.StatsConfig == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires {nameof(StatsConfig)} in {nameof(OrcBirthConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(StatsConfig)} in {nameof(NecropolisConfig)}.");
         }
 
         if (_config.RestConfig == null || !_config.RestConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid {nameof(RestConfig)} in {nameof(OrcBirthConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(RestConfig)} in {nameof(NecropolisConfig)}.");
         }
 
         if (_config.LevelUpConfig == null || !_config.LevelUpConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(OrcBirthConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(NecropolisConfig)}.");
         }
 
         if (!_config.DiceConfig.ValidateForRuntime(_config))
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid dice config.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid dice config.");
         }
 
         if (!_config.StatsConfig.ValidateForRuntime(_config))
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires valid stats config.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid stats config.");
         }
 
         if (_camera == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires scene camera.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene camera.");
         }
 
         if (_canvas == null || _availableDiceRoot == null || _selectedDiceRoot == null || _diceButtonTemplate == null ||
-            _selectedDiceLabel == null || _statusText == null || _orcInfoTitle == null || _orcInfoText == null ||
-            _createOrcButton == null)
+            _selectedDiceLabel == null || _statusText == null || _heroInfoTitle == null || _heroInfoText == null ||
+            _createHeroButton == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires scene UI references.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene UI references.");
         }
 
         if (_enduranceUpgradeButton == null || _strengthUpgradeButton == null || _agilityUpgradeButton == null ||
             _intelligenceUpgradeButton == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires primary stat upgrade button references.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires primary stat upgrade button references.");
         }
 
         if (_restZoneCollider == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires rest zone collider reference.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires rest zone collider reference.");
         }
 
         if (_raidSystem == null)
         {
-            throw new System.InvalidOperationException($"{nameof(OrcBirthSystem)} requires raid system reference.");
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires raid system reference.");
         }
     }
 
-    private void TryBeginOrcDrag()
+    private void TryBeginHeroDrag()
     {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
@@ -301,52 +301,52 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
 
         Vector3 worldPosition = GetMouseWorldPosition();
-        OrcRuntimeData orcData = GetOrcAtWorldPosition(worldPosition);
+        HeroRuntimeData heroData = GetHeroAtWorldPosition(worldPosition);
 
-        if (orcData == null || orcData.State == OrcActivityState.InRaid || orcData.ViewObject == null)
+        if (heroData == null || heroData.State == HeroActivityState.InRaid || heroData.ViewObject == null)
         {
             return;
         }
 
-        _draggedOrc = orcData;
-        _dragOffset = orcData.ViewObject.transform.position - worldPosition;
-        ShowOrcInfo(orcData);
+        _draggedHero = heroData;
+        _dragOffset = heroData.ViewObject.transform.position - worldPosition;
+        ShowHeroInfo(heroData);
     }
 
-    private void UpdateOrcDrag()
+    private void UpdateHeroDrag()
     {
-        if (_draggedOrc.ViewObject == null)
+        if (_draggedHero.ViewObject == null)
         {
-            _draggedOrc = null;
+            _draggedHero = null;
             return;
         }
 
-        _draggedOrc.ViewObject.transform.position = GetMouseWorldPosition() + _dragOffset;
+        _draggedHero.ViewObject.transform.position = GetMouseWorldPosition() + _dragOffset;
     }
 
-    private void EndOrcDrag()
+    private void EndHeroDrag()
     {
-        OrcRuntimeData orcData = _draggedOrc;
-        _draggedOrc = null;
+        HeroRuntimeData heroData = _draggedHero;
+        _draggedHero = null;
 
-        if (orcData == null)
+        if (heroData == null)
         {
             return;
         }
 
         Vector2 screenPosition = Mouse.current.position.ReadValue();
 
-        if (_raidSystem.TryAcceptDroppedOrc(orcData, screenPosition))
+        if (_raidSystem.TryAcceptDroppedHero(heroData, screenPosition))
         {
-            _statusText.text = $"{orcData.Name}: {orcData.GetStateDisplayName()}.";
+            _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
             return;
         }
 
-        OrcActivityState nextState = IsPointInsideRestZone(GetMouseWorldPosition())
-            ? OrcActivityState.Resting
-            : OrcActivityState.OnBase;
-        SetOrcStateAtPosition(orcData, nextState, orcData.ViewObject.transform.position);
-        _statusText.text = $"{orcData.Name}: {orcData.GetStateDisplayName()}.";
+        HeroActivityState nextState = IsPointInsideRestZone(GetMouseWorldPosition())
+            ? HeroActivityState.Resting
+            : HeroActivityState.OnBase;
+        SetHeroStateAtPosition(heroData, nextState, heroData.ViewObject.transform.position);
+        _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
     }
 
     private Vector3 GetMouseWorldPosition()
@@ -357,15 +357,15 @@ public sealed class OrcBirthSystem : MonoBehaviour
         return worldPosition;
     }
 
-    private OrcRuntimeData GetOrcAtWorldPosition(Vector2 worldPosition)
+    private HeroRuntimeData GetHeroAtWorldPosition(Vector2 worldPosition)
     {
         Collider2D[] hits = Physics2D.OverlapPointAll(worldPosition);
 
         for (int i = 0; i < hits.Length; i++)
         {
-            if (hits[i] != null && _orcDataByObject.TryGetValue(hits[i].gameObject, out OrcRuntimeData orcData))
+            if (hits[i] != null && _heroDataByObject.TryGetValue(hits[i].gameObject, out HeroRuntimeData heroData))
             {
-                return orcData;
+                return heroData;
             }
         }
 
@@ -392,9 +392,9 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
     private void ResetInfoText()
     {
-        _statusText.text = $"Выбери минимум {_config.RequiredDiceCount} кубиков и нажми кнопку.";
-        _orcInfoTitle.text = "Орк";
-        _orcInfoText.text = "Созданные орки появятся рядом с котлом.\nКлик по орку покажет статы.";
+        _statusText.text = $"Выбери минимум {_config.RequiredDiceCount} костей и нажми кнопку.";
+        _heroInfoTitle.text = "Герой";
+        _heroInfoText.text = "Созданные герои появятся рядом с Некрополем.\nКлик по герою покажет статы.";
         RefreshPrimaryStatUpgradeButtons(null);
     }
 
@@ -404,8 +404,8 @@ public sealed class OrcBirthSystem : MonoBehaviour
         RefreshDiceGrid(_availableDiceRoot, _availableDice, SelectDice);
         RefreshDiceGrid(_selectedDiceRoot, _selectedDice, UnselectDice);
 
-        _createOrcButton.interactable = _selectedDice.Count >= _config.RequiredDiceCount;
-        _selectedDiceLabel.text = $"Кубики в котле: {_selectedDice.Count}/{_config.RequiredDiceCount}";
+        _createHeroButton.interactable = _selectedDice.Count >= _config.RequiredDiceCount;
+        _selectedDiceLabel.text = $"Кости в Некрополе: {_selectedDice.Count}/{_config.RequiredDiceCount}";
     }
 
     private void RefreshDiceGrid(RectTransform root, List<DiceRuntimeData> dice, System.Action<DiceRuntimeData> clickAction)
@@ -455,15 +455,15 @@ public sealed class OrcBirthSystem : MonoBehaviour
         RefreshUi();
     }
 
-    private void CreateOrc()
+    private void CreateHero()
     {
         if (_selectedDice.Count < _config.RequiredDiceCount)
         {
-            _statusText.text = $"Нужно минимум {_config.RequiredDiceCount} кубиков.";
+            _statusText.text = $"Нужно минимум {_config.RequiredDiceCount} костей.";
             return;
         }
 
-        OrcStats stats = new OrcStats();
+        PrimaryStats stats = new PrimaryStats();
         stats.SetToMinimums(_config.StatsConfig);
         List<string> rollTexts = new List<string>();
 
@@ -475,118 +475,118 @@ public sealed class OrcBirthSystem : MonoBehaviour
             rollTexts.Add($"{dice.DisplayName}: {face.GetDisplayText()}");
         }
 
-        stats.ClampAfterBirth(_config.StatsConfig);
+        stats.ClampAfterCreation(_config.StatsConfig);
 
-        float maxHp = CalculateOrcMaxHp(stats);
-        OrcRuntimeData orcData = new OrcRuntimeData($"Орк {_nextOrcId}", stats, rollTexts, maxHp);
-        SpawnOrc(orcData);
+        float maxHp = CalculateHeroMaxHp(stats);
+        HeroRuntimeData heroData = new HeroRuntimeData($"Герой {_nextHeroId}", stats, rollTexts, maxHp);
+        SpawnHero(heroData);
 
-        _nextOrcId++;
+        _nextHeroId++;
         _selectedDice.Clear();
-        _statusText.text = $"{orcData.Name} рожден.";
-        ShowOrcInfo(orcData);
+        _statusText.text = $"{heroData.Name} рожден.";
+        ShowHeroInfo(heroData);
         RefreshUi();
     }
 
-    private void SpawnOrc(OrcRuntimeData orcData)
+    private void SpawnHero(HeroRuntimeData heroData)
     {
-        Vector2 visualSize = _config.GetOrcVisualSizeForLevel(orcData.Level);
-        GameObject orcObject = new GameObject(orcData.Name);
-        orcObject.transform.SetParent(transform, false);
-        orcObject.transform.localScale = Vector3.one;
+        Vector2 visualSize = _config.GetHeroVisualSizeForLevel(heroData.Level);
+        GameObject heroObject = new GameObject(heroData.Name);
+        heroObject.transform.SetParent(transform, false);
+        heroObject.transform.localScale = Vector3.one;
 
         GameObject spriteObject = new GameObject("Sprite");
-        spriteObject.transform.SetParent(orcObject.transform, false);
+        spriteObject.transform.SetParent(heroObject.transform, false);
 
         SpriteRenderer renderer = spriteObject.AddComponent<SpriteRenderer>();
         renderer.sprite = _whiteSprite;
         renderer.drawMode = SpriteDrawMode.Sliced;
         renderer.size = visualSize;
-        renderer.color = _config.OrcVisualColor;
-        renderer.sortingOrder = _config.OrcSpriteSortingOrder;
+        renderer.color = _config.HeroVisualColor;
+        renderer.sortingOrder = _config.HeroSpriteSortingOrder;
 
         GameObject colliderObject = new GameObject("Collider");
-        colliderObject.transform.SetParent(orcObject.transform, false);
+        colliderObject.transform.SetParent(heroObject.transform, false);
 
         BoxCollider2D collider = colliderObject.AddComponent<BoxCollider2D>();
         collider.size = visualSize;
 
-        GameObject selectionOutline = CreateOrcSelectionOutline(orcObject.transform, visualSize);
-        OrcMapHealthBar healthBar = CreateOrcHealthBar(orcObject.transform, visualSize);
-        TextMeshPro label = CreateOrcLabel(orcObject.transform, orcData.Name, visualSize);
-        orcData.SetMapPosition(GetDefaultOrcPositionForState(orcData, OrcActivityState.OnBase));
-        _orcs.Add(orcData);
-        orcData.AttachView(orcObject);
-        _orcDataByObject.Add(colliderObject, orcData);
-        _selectionOutlineByOrc.Add(orcData, selectionOutline);
-        _healthBarByOrc.Add(orcData, healthBar);
-        _mapVisualByOrc.Add(orcData, new OrcMapVisual(renderer, collider, selectionOutline.GetComponent<SpriteRenderer>(), label, healthBar));
-        RefreshOrcVisualStates();
+        GameObject selectionOutline = CreateHeroSelectionOutline(heroObject.transform, visualSize);
+        HeroMapHealthBar healthBar = CreateHeroHealthBar(heroObject.transform, visualSize);
+        TextMeshPro label = CreateHeroLabel(heroObject.transform, heroData.Name, visualSize);
+        heroData.SetMapPosition(GetDefaultHeroPositionForState(heroData, HeroActivityState.OnBase));
+        _heroes.Add(heroData);
+        heroData.AttachView(heroObject);
+        _heroDataByObject.Add(colliderObject, heroData);
+        _selectionOutlineByHero.Add(heroData, selectionOutline);
+        _healthBarByHero.Add(heroData, healthBar);
+        _mapVisualByHero.Add(heroData, new HeroMapVisual(renderer, collider, selectionOutline.GetComponent<SpriteRenderer>(), label, healthBar));
+        RefreshHeroVisualStates();
     }
 
-    private void RefreshOrcVisualStates()
+    private void RefreshHeroVisualStates()
     {
-        for (int i = 0; i < _orcs.Count; i++)
+        for (int i = 0; i < _heroes.Count; i++)
         {
-            OrcRuntimeData orcData = _orcs[i];
+            HeroRuntimeData heroData = _heroes[i];
 
-            if (orcData.ViewObject == null)
+            if (heroData.ViewObject == null)
             {
                 continue;
             }
 
-            bool isVisible = orcData.State != OrcActivityState.InRaid;
-            orcData.ViewObject.SetActive(isVisible);
+            bool isVisible = heroData.State != HeroActivityState.InRaid;
+            heroData.ViewObject.SetActive(isVisible);
 
             if (isVisible)
             {
-                orcData.ViewObject.transform.position = orcData.MapPosition;
+                heroData.ViewObject.transform.position = heroData.MapPosition;
             }
 
-            if (_selectionOutlineByOrc.TryGetValue(orcData, out GameObject selectionOutline) &&
+            if (_selectionOutlineByHero.TryGetValue(heroData, out GameObject selectionOutline) &&
                 selectionOutline != null)
             {
-                selectionOutline.SetActive(isVisible && orcData == _selectedOrc);
+                selectionOutline.SetActive(isVisible && heroData == _selectedHero);
             }
 
-            RefreshOrcHealthBar(orcData);
+            RefreshHeroHealthBar(heroData);
         }
     }
 
-    private Vector2 GetDefaultOrcPositionForState(OrcRuntimeData targetOrc, OrcActivityState state)
+    private Vector2 GetDefaultHeroPositionForState(HeroRuntimeData targetHero, HeroActivityState state)
     {
-        Vector2 firstPosition = state == OrcActivityState.Resting
-            ? _config.FirstRestingOrcPosition
-            : _config.FirstOrcSpawnPosition;
-        Vector2 spacing = state == OrcActivityState.Resting
-            ? _config.RestingOrcSpacing
-            : _config.OrcSpawnSpacing;
-        int maxOrcsPerRow = state == OrcActivityState.Resting
-            ? _config.MaxRestingOrcsPerRow
-            : _config.MaxOrcsPerRow;
+        Vector2 firstPosition = state == HeroActivityState.Resting
+            ? _config.FirstRestingHeroPosition
+            : _config.FirstHeroSpawnPosition;
+        Vector2 spacing = state == HeroActivityState.Resting
+            ? _config.RestingHeroSpacing
+            : _config.HeroSpawnSpacing;
+        int maxHeroesPerRow = state == HeroActivityState.Resting
+            ? _config.MaxRestingHeroesPerRow
+            : _config.MaxHeroesPerRow;
         int indexInState = 0;
 
-        for (int i = 0; i < _orcs.Count; i++)
+        for (int i = 0; i < _heroes.Count; i++)
         {
-            OrcRuntimeData orcData = _orcs[i];
+            HeroRuntimeData heroData = _heroes[i];
 
-            if (orcData != targetOrc && orcData.State == state)
+            if (heroData != targetHero && heroData.State == state)
             {
                 indexInState++;
             }
         }
 
-        int row = indexInState / maxOrcsPerRow;
-        int column = indexInState % maxOrcsPerRow;
+        int row = indexInState / maxHeroesPerRow;
+        int column = indexInState % maxHeroesPerRow;
         return firstPosition + new Vector2(spacing.x * column, spacing.y - row * 1.2f);
     }
 
-    private TextMeshPro CreateOrcLabel(Transform parent, string text, Vector2 visualSize)
+    private TextMeshPro CreateHeroLabel(Transform parent, string text, Vector2 visualSize)
     {
         GameObject labelObject = new GameObject("Label");
         labelObject.transform.SetParent(parent, false);
         labelObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
-        labelObject.transform.localScale = new Vector3(_orcLabelScale, _orcLabelScale, 1f);
+        labelObject.transform.localScale = new Vector3(_heroLabelScale, _heroLabelScale, 1f);
 
         TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
         label.text = text;
@@ -598,12 +598,12 @@ public sealed class OrcBirthSystem : MonoBehaviour
         label.alignment = TextAlignmentOptions.Center;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.overflowMode = TextOverflowModes.Ellipsis;
-        label.sortingOrder = _config.OrcLabelSortingOrder;
-        label.rectTransform.sizeDelta = GetOrcLabelRectSize(visualSize);
+        label.sortingOrder = _config.HeroLabelSortingOrder;
+        label.rectTransform.sizeDelta = GetHeroLabelRectSize(visualSize);
         return label;
     }
 
-    private GameObject CreateOrcSelectionOutline(Transform parent, Vector2 visualSize)
+    private GameObject CreateHeroSelectionOutline(Transform parent, Vector2 visualSize)
     {
         GameObject outlineObject = new GameObject("Selection Outline");
         outlineObject.transform.SetParent(parent, false);
@@ -611,18 +611,18 @@ public sealed class OrcBirthSystem : MonoBehaviour
         SpriteRenderer renderer = outlineObject.AddComponent<SpriteRenderer>();
         renderer.sprite = _whiteSprite;
         renderer.drawMode = SpriteDrawMode.Sliced;
-        renderer.size = visualSize + _selectedOrcOutlinePadding;
-        renderer.color = _selectedOrcOutlineColor;
-        renderer.sortingOrder = _config.OrcSpriteSortingOrder - 1;
+        renderer.size = visualSize + _selectedHeroOutlinePadding;
+        renderer.color = _selectedHeroOutlineColor;
+        renderer.sortingOrder = _config.HeroSpriteSortingOrder - 1;
 
         outlineObject.SetActive(false);
         return outlineObject;
     }
 
-    private OrcMapHealthBar CreateOrcHealthBar(Transform parent, Vector2 visualSize)
+    private HeroMapHealthBar CreateHeroHealthBar(Transform parent, Vector2 visualSize)
     {
-        Vector2 barSize = GetOrcHealthBarSize(visualSize);
-        Vector3 barPosition = GetOrcHealthBarPosition(visualSize);
+        Vector2 barSize = GetHeroHealthBarSize(visualSize);
+        Vector3 barPosition = GetHeroHealthBarPosition(visualSize);
 
         GameObject rootObject = new GameObject("HP Bar");
         rootObject.transform.SetParent(parent, false);
@@ -636,7 +636,7 @@ public sealed class OrcBirthSystem : MonoBehaviour
         background.drawMode = SpriteDrawMode.Sliced;
         background.size = barSize;
         background.color = new Color(0.09f, 0.1f, 0.11f, 1f);
-        background.sortingOrder = _config.OrcLabelSortingOrder + 1;
+        background.sortingOrder = _config.HeroLabelSortingOrder + 1;
 
         GameObject fillObject = new GameObject("Fill");
         fillObject.transform.SetParent(rootObject.transform, false);
@@ -646,68 +646,68 @@ public sealed class OrcBirthSystem : MonoBehaviour
         fill.drawMode = SpriteDrawMode.Sliced;
         fill.size = barSize;
         fill.color = new Color(0.42f, 0.9f, 0.42f, 1f);
-        fill.sortingOrder = _config.OrcLabelSortingOrder + 2;
+        fill.sortingOrder = _config.HeroLabelSortingOrder + 2;
 
-        return new OrcMapHealthBar(rootObject, background, fill, barSize);
+        return new HeroMapHealthBar(rootObject, background, fill, barSize);
     }
 
-    private void RefreshOrcMapVisualSize(OrcRuntimeData orcData)
+    private void RefreshHeroMapVisualSize(HeroRuntimeData heroData)
     {
-        if (orcData == null || !_mapVisualByOrc.TryGetValue(orcData, out OrcMapVisual mapVisual))
+        if (heroData == null || !_mapVisualByHero.TryGetValue(heroData, out HeroMapVisual mapVisual))
         {
             return;
         }
 
-        mapVisual.SetSize(_config.GetOrcVisualSizeForLevel(orcData.Level), _selectedOrcOutlinePadding);
+        mapVisual.SetSize(_config.GetHeroVisualSizeForLevel(heroData.Level), _selectedHeroOutlinePadding);
     }
 
-    private static Vector2 GetOrcLabelRectSize(Vector2 visualSize)
+    private static Vector2 GetHeroLabelRectSize(Vector2 visualSize)
     {
-        return new Vector2(visualSize.x * 0.92f / _orcLabelScale, visualSize.y * 0.9f / _orcLabelScale);
+        return new Vector2(visualSize.x * 0.92f / _heroLabelScale, visualSize.y * 0.9f / _heroLabelScale);
     }
 
-    private static Vector2 GetOrcHealthBarSize(Vector2 visualSize)
+    private static Vector2 GetHeroHealthBarSize(Vector2 visualSize)
     {
         return new Vector2(visualSize.x * 0.9f, 0.08f);
     }
 
-    private static Vector3 GetOrcHealthBarPosition(Vector2 visualSize)
+    private static Vector3 GetHeroHealthBarPosition(Vector2 visualSize)
     {
         return new Vector3(0f, visualSize.y * 0.5f + 0.16f, -0.1f);
     }
 
-    private void RefreshOrcHealthBar(OrcRuntimeData orcData)
+    private void RefreshHeroHealthBar(HeroRuntimeData heroData)
     {
-        if (orcData == null || !_healthBarByOrc.TryGetValue(orcData, out OrcMapHealthBar healthBar))
+        if (heroData == null || !_healthBarByHero.TryGetValue(heroData, out HeroMapHealthBar healthBar))
         {
             return;
         }
 
-        bool isVisible = orcData.State != OrcActivityState.InRaid;
+        bool isVisible = heroData.State != HeroActivityState.InRaid;
         healthBar.SetVisible(isVisible);
 
         if (isVisible)
         {
-            healthBar.SetHealth(orcData.CurrentHp, orcData.MaxHp);
+            healthBar.SetHealth(heroData.CurrentHp, heroData.MaxHp);
         }
     }
 
-    private void ShowOrcInfo(OrcRuntimeData orcData)
+    private void ShowHeroInfo(HeroRuntimeData heroData)
     {
-        _selectedOrc = orcData;
-        RefreshOrcVisualStates();
-        _orcInfoTitle.text = orcData.Name;
-        string freeStatsLine = orcData.FreePrimaryStatPoints > 0
-            ? $"Свободные статы: {orcData.FreePrimaryStatPoints}\n"
+        _selectedHero = heroData;
+        RefreshHeroVisualStates();
+        _heroInfoTitle.text = heroData.Name;
+        string freeStatsLine = heroData.FreePrimaryStatPoints > 0
+            ? $"Свободные статы: {heroData.FreePrimaryStatPoints}\n"
             : "";
 
-        _orcInfoText.text = $"Состояние: {orcData.GetStateDisplayName()}\n" +
-            $"Уровень: {orcData.Level}    Опыт: {orcData.GetExperienceDisplay(_config.LevelUpConfig)}\n" +
+        _heroInfoText.text = $"Состояние: {heroData.GetStateDisplayName()}\n" +
+            $"Уровень: {heroData.Level}    Опыт: {heroData.GetExperienceDisplay(_config.LevelUpConfig)}\n" +
             freeStatsLine +
-            $"{FormatOrcHealthLine(orcData)}\n\n" +
-            $"{orcData.Stats.GetSummary(_config.StatsConfig)}\n\n" +
-            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(orcData.Stats)}";
-        RefreshPrimaryStatUpgradeButtons(orcData);
+            $"{FormatHeroHealthLine(heroData)}\n\n" +
+            $"{heroData.Stats.GetSummary(_config.StatsConfig)}\n\n" +
+            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(heroData.Stats)}";
+        RefreshPrimaryStatUpgradeButtons(heroData);
     }
 
     private void AddPrimaryStatUpgradeListeners()
@@ -783,24 +783,24 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
     }
 
-    private void RefreshPrimaryStatUpgradeButtons(OrcRuntimeData orcData)
+    private void RefreshPrimaryStatUpgradeButtons(HeroRuntimeData heroData)
     {
-        _orcInfoText.ForceMeshUpdate();
+        _heroInfoText.ForceMeshUpdate();
 
-        PositionPrimaryStatUpgradeButton(_enduranceUpgradeButton, orcData, 0);
-        PositionPrimaryStatUpgradeButton(_strengthUpgradeButton, orcData, 1);
-        PositionPrimaryStatUpgradeButton(_agilityUpgradeButton, orcData, 2);
-        PositionPrimaryStatUpgradeButton(_intelligenceUpgradeButton, orcData, 3);
+        PositionPrimaryStatUpgradeButton(_enduranceUpgradeButton, heroData, 0);
+        PositionPrimaryStatUpgradeButton(_strengthUpgradeButton, heroData, 1);
+        PositionPrimaryStatUpgradeButton(_agilityUpgradeButton, heroData, 2);
+        PositionPrimaryStatUpgradeButton(_intelligenceUpgradeButton, heroData, 3);
 
-        RefreshPrimaryStatUpgradeButton(_enduranceUpgradeButton, orcData, OrcStatType.Endurance);
-        RefreshPrimaryStatUpgradeButton(_strengthUpgradeButton, orcData, OrcStatType.Strength);
-        RefreshPrimaryStatUpgradeButton(_agilityUpgradeButton, orcData, OrcStatType.Agility);
-        RefreshPrimaryStatUpgradeButton(_intelligenceUpgradeButton, orcData, OrcStatType.Intelligence);
+        RefreshPrimaryStatUpgradeButton(_enduranceUpgradeButton, heroData, PrimaryStatType.Endurance);
+        RefreshPrimaryStatUpgradeButton(_strengthUpgradeButton, heroData, PrimaryStatType.Strength);
+        RefreshPrimaryStatUpgradeButton(_agilityUpgradeButton, heroData, PrimaryStatType.Agility);
+        RefreshPrimaryStatUpgradeButton(_intelligenceUpgradeButton, heroData, PrimaryStatType.Intelligence);
     }
 
-    private void PositionPrimaryStatUpgradeButton(Button button, OrcRuntimeData orcData, int rowIndex)
+    private void PositionPrimaryStatUpgradeButton(Button button, HeroRuntimeData heroData, int rowIndex)
     {
-        if (button == null || _orcInfoText == null)
+        if (button == null || _heroInfoText == null)
         {
             return;
         }
@@ -812,15 +812,15 @@ public sealed class OrcBirthSystem : MonoBehaviour
             return;
         }
 
-        RectTransform textRectTransform = _orcInfoText.rectTransform;
+        RectTransform textRectTransform = _heroInfoText.rectTransform;
         rectTransform.SetParent(textRectTransform, false);
         rectTransform.anchorMin = new Vector2(0f, 1f);
         rectTransform.anchorMax = new Vector2(0f, 1f);
         rectTransform.pivot = new Vector2(0.5f, 0.5f);
         rectTransform.sizeDelta = _primaryStatUpgradeButtonSize;
 
-        TMP_TextInfo textInfo = _orcInfoText.textInfo;
-        int primaryStatLineIndex = (orcData != null && orcData.FreePrimaryStatPoints > 0
+        TMP_TextInfo textInfo = _heroInfoText.textInfo;
+        int primaryStatLineIndex = (heroData != null && heroData.FreePrimaryStatPoints > 0
             ? _primaryStatLineIndexWithFreeStats
             : _primaryStatLineIndexWithoutFreeStats) + rowIndex;
 
@@ -836,52 +836,52 @@ public sealed class OrcBirthSystem : MonoBehaviour
         rectTransform.anchoredPosition = new Vector2(x, y);
     }
 
-    private void RefreshPrimaryStatUpgradeButton(Button button, OrcRuntimeData orcData, OrcStatType statType)
+    private void RefreshPrimaryStatUpgradeButton(Button button, HeroRuntimeData heroData, PrimaryStatType statType)
     {
         if (button == null)
         {
             return;
         }
 
-        bool visible = orcData != null && orcData.FreePrimaryStatPoints > 0;
+        bool visible = heroData != null && heroData.FreePrimaryStatPoints > 0;
         button.gameObject.SetActive(visible);
-        button.interactable = visible && orcData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
+        button.interactable = visible && heroData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
     }
 
     private void SpendEndurancePoint()
     {
-        SpendPrimaryStatPoint(OrcStatType.Endurance);
+        SpendPrimaryStatPoint(PrimaryStatType.Endurance);
     }
 
     private void SpendStrengthPoint()
     {
-        SpendPrimaryStatPoint(OrcStatType.Strength);
+        SpendPrimaryStatPoint(PrimaryStatType.Strength);
     }
 
     private void SpendAgilityPoint()
     {
-        SpendPrimaryStatPoint(OrcStatType.Agility);
+        SpendPrimaryStatPoint(PrimaryStatType.Agility);
     }
 
     private void SpendIntelligencePoint()
     {
-        SpendPrimaryStatPoint(OrcStatType.Intelligence);
+        SpendPrimaryStatPoint(PrimaryStatType.Intelligence);
     }
 
-    private void SpendPrimaryStatPoint(OrcStatType statType)
+    private void SpendPrimaryStatPoint(PrimaryStatType statType)
     {
-        if (_selectedOrc == null || !_selectedOrc.TrySpendFreePrimaryStatPoint(statType, _config.StatsConfig))
+        if (_selectedHero == null || !_selectedHero.TrySpendFreePrimaryStatPoint(statType, _config.StatsConfig))
         {
             return;
         }
 
-        _selectedOrc.SetMaxHp(CalculateOrcMaxHp(_selectedOrc.Stats), false);
-        RefreshOrcHealthBar(_selectedOrc);
-        _raidSystem.RefreshOrcCombatStats(_selectedOrc);
-        ShowOrcInfo(_selectedOrc);
+        _selectedHero.SetMaxHp(CalculateHeroMaxHp(_selectedHero.Stats), false);
+        RefreshHeroHealthBar(_selectedHero);
+        _raidSystem.RefreshHeroCombatStats(_selectedHero);
+        ShowHeroInfo(_selectedHero);
     }
 
-    private void UpdateRestingOrcs(float deltaTime)
+    private void UpdateRestingHeroes(float deltaTime)
     {
         RestConfig restConfig = _config.RestConfig;
 
@@ -892,66 +892,66 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
         float tickSeconds = restConfig.HealTickSeconds;
 
-        for (int i = 0; i < _orcs.Count; i++)
+        for (int i = 0; i < _heroes.Count; i++)
         {
-            OrcRuntimeData orcData = _orcs[i];
+            HeroRuntimeData heroData = _heroes[i];
 
-            if (orcData.State != OrcActivityState.Resting || orcData.IsFullyHealed)
+            if (heroData.State != HeroActivityState.Resting || heroData.IsFullyHealed)
             {
-                _restHealTimers.Remove(orcData);
+                _restHealTimers.Remove(heroData);
                 continue;
             }
 
-            float healAmount = restConfig.GetHealAmount(orcData.MaxHp);
+            float healAmount = restConfig.GetHealAmount(heroData.MaxHp);
 
             if (healAmount <= 0f)
             {
                 continue;
             }
 
-            _restHealTimers.TryGetValue(orcData, out float timer);
+            _restHealTimers.TryGetValue(heroData, out float timer);
             timer += deltaTime;
             bool healed = false;
 
-            while (timer >= tickSeconds && !orcData.IsFullyHealed)
+            while (timer >= tickSeconds && !heroData.IsFullyHealed)
             {
                 timer -= tickSeconds;
-                orcData.Heal(healAmount);
-                RefreshOrcHealthBar(orcData);
+                heroData.Heal(healAmount);
+                RefreshHeroHealthBar(heroData);
                 healed = true;
             }
 
-            if (orcData.IsFullyHealed)
+            if (heroData.IsFullyHealed)
             {
                 timer = 0f;
             }
 
-            _restHealTimers[orcData] = timer;
+            _restHealTimers[heroData] = timer;
 
-            if (healed && _selectedOrc == orcData)
+            if (healed && _selectedHero == heroData)
             {
-                ShowOrcInfo(orcData);
+                ShowHeroInfo(heroData);
             }
         }
     }
 
-    private float CalculateOrcMaxHp(OrcStats stats)
+    private float CalculateHeroMaxHp(PrimaryStats stats)
     {
         return Mathf.Max(1f, _config.StatsConfig.CalculateSecondaryStats(stats).MaxHp);
     }
 
-    private static string FormatOrcHealthLine(OrcRuntimeData orcData)
+    private static string FormatHeroHealthLine(HeroRuntimeData heroData)
     {
-        int currentHp = Mathf.CeilToInt(orcData.CurrentHp);
-        int maxHp = Mathf.CeilToInt(orcData.MaxHp);
-        return $"Здоровье: {currentHp}/{maxHp} <mspace=0.45em>{FormatHpBar(orcData.CurrentHp, orcData.MaxHp)}</mspace>";
+        int currentHp = Mathf.CeilToInt(heroData.CurrentHp);
+        int maxHp = Mathf.CeilToInt(heroData.MaxHp);
+        return $"Здоровье: {currentHp}/{maxHp} <mspace=0.45em>{FormatHpBar(heroData.CurrentHp, heroData.MaxHp)}</mspace>";
     }
 
     private static string FormatHpBar(float currentHp, float maxHp)
     {
         float ratio = maxHp <= 0f ? 0f : Mathf.Clamp01(currentHp / maxHp);
-        int filledCells = Mathf.Clamp(Mathf.RoundToInt(ratio * _orcInfoHpBarCells), 0, _orcInfoHpBarCells);
-        int emptyCells = _orcInfoHpBarCells - filledCells;
+        int filledCells = Mathf.Clamp(Mathf.RoundToInt(ratio * _heroInfoHpBarCells), 0, _heroInfoHpBarCells);
+        int emptyCells = _heroInfoHpBarCells - filledCells;
         return $"<color=#FFFFFF>{new string(_filledHpCell, filledCells)}</color><color=#5B6570>{new string(_emptyHpCell, emptyCells)}</color>";
     }
 
@@ -997,20 +997,20 @@ public sealed class OrcBirthSystem : MonoBehaviour
         }
     }
 
-    private sealed class OrcMapVisual
+    private sealed class HeroMapVisual
     {
         private readonly SpriteRenderer _spriteRenderer;
         private readonly BoxCollider2D _collider;
         private readonly SpriteRenderer _selectionOutline;
         private readonly TextMeshPro _label;
-        private readonly OrcMapHealthBar _healthBar;
+        private readonly HeroMapHealthBar _healthBar;
 
-        public OrcMapVisual(
+        public HeroMapVisual(
             SpriteRenderer spriteRenderer,
             BoxCollider2D collider,
             SpriteRenderer selectionOutline,
             TextMeshPro label,
-            OrcMapHealthBar healthBar)
+            HeroMapHealthBar healthBar)
         {
             _spriteRenderer = spriteRenderer;
             _collider = collider;
@@ -1038,21 +1038,21 @@ public sealed class OrcBirthSystem : MonoBehaviour
 
             if (_label != null)
             {
-                _label.rectTransform.sizeDelta = GetOrcLabelRectSize(visualSize);
+                _label.rectTransform.sizeDelta = GetHeroLabelRectSize(visualSize);
             }
 
-            _healthBar?.SetSize(GetOrcHealthBarSize(visualSize), GetOrcHealthBarPosition(visualSize));
+            _healthBar?.SetSize(GetHeroHealthBarSize(visualSize), GetHeroHealthBarPosition(visualSize));
         }
     }
 
-    private sealed class OrcMapHealthBar
+    private sealed class HeroMapHealthBar
     {
         private readonly GameObject _rootObject;
         private readonly SpriteRenderer _background;
         private readonly SpriteRenderer _fill;
         private Vector2 _size;
 
-        public OrcMapHealthBar(GameObject rootObject, SpriteRenderer background, SpriteRenderer fill, Vector2 size)
+        public HeroMapHealthBar(GameObject rootObject, SpriteRenderer background, SpriteRenderer fill, Vector2 size)
         {
             _rootObject = rootObject;
             _background = background;

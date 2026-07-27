@@ -6,12 +6,12 @@ public sealed class GameSceneBootstrap : MonoBehaviour
 {
     [Header("Configs")]
     [SerializeField] private CameraConfig _cameraConfig = null;
-    [SerializeField] private OrcBirthConfig _orcBirthConfig = null;
+    [SerializeField] private NecropolisConfig _necropolisConfig = null;
 
     [Header("Scene References")]
     [SerializeField] private Camera _sceneCamera = null;
     [SerializeField] private EdgeCameraPan _cameraPan = null;
-    [SerializeField] private OrcBirthSystem _orcBirthSystem = null;
+    [SerializeField] private NecropolisSystem _necropolisSystem = null;
     [SerializeField] private EventSystem _eventSystem = null;
 
     private void Awake()
@@ -23,10 +23,10 @@ public sealed class GameSceneBootstrap : MonoBehaviour
     private void ValidateSceneReferences()
     {
         LogMissingReference(_cameraConfig, nameof(_cameraConfig));
-        LogMissingReference(_orcBirthConfig, nameof(_orcBirthConfig));
+        LogMissingReference(_necropolisConfig, nameof(_necropolisConfig));
         LogMissingReference(_sceneCamera, nameof(_sceneCamera));
         LogMissingReference(_cameraPan, nameof(_cameraPan));
-        LogMissingReference(_orcBirthSystem, nameof(_orcBirthSystem));
+        LogMissingReference(_necropolisSystem, nameof(_necropolisSystem));
         LogMissingReference(_eventSystem, nameof(_eventSystem));
 
         if (_eventSystem != null && _eventSystem.GetComponent<InputSystemUIInputModule>() == null)
@@ -42,9 +42,9 @@ public sealed class GameSceneBootstrap : MonoBehaviour
             _cameraPan.Configure(_cameraConfig);
         }
 
-        if (_orcBirthSystem != null && _orcBirthConfig != null && _sceneCamera != null)
+        if (_necropolisSystem != null && _necropolisConfig != null && _sceneCamera != null)
         {
-            _orcBirthSystem.Configure(_orcBirthConfig, _sceneCamera);
+            _necropolisSystem.Configure(_necropolisConfig, _sceneCamera);
         }
     }
 

@@ -30,7 +30,7 @@ public sealed class StatsConfig : ScriptableObject
     public IReadOnlyList<SecondaryStatDefinition> SecondaryStats => _secondaryStats;
     public IReadOnlyList<StatScalingRule> ScalingRules => _scalingRules;
 
-    public int GetPrimaryStatMinimumValue(OrcStatType statType)
+    public int GetPrimaryStatMinimumValue(PrimaryStatType statType)
     {
         for (int i = 0; i < _primaryStats.Count; i++)
         {
@@ -45,12 +45,12 @@ public sealed class StatsConfig : ScriptableObject
         return 0;
     }
 
-    public int ClampPrimaryStat(OrcStatType statType, int value)
+    public int ClampPrimaryStat(PrimaryStatType statType, int value)
     {
         return Mathf.Clamp(value, GetPrimaryStatMinimumValue(statType), _maxPrimaryStatValue);
     }
 
-    public float GetSecondaryStatMinimumValue(OrcSecondaryStatType statType)
+    public float GetSecondaryStatMinimumValue(SecondaryStatType statType)
     {
         for (int i = 0; i < _secondaryStats.Count; i++)
         {
@@ -58,7 +58,7 @@ public sealed class StatsConfig : ScriptableObject
 
             if (definition != null && definition.StatType == statType)
             {
-                return statType == OrcSecondaryStatType.AttackSpeed
+                return statType == SecondaryStatType.AttackSpeed
                     ? _attackIntervalSeconds
                     : definition.MinimumValue;
             }
@@ -67,7 +67,7 @@ public sealed class StatsConfig : ScriptableObject
         return 0f;
     }
 
-    public SecondaryStatsSnapshot CalculateSecondaryStats(OrcStats primaryStats)
+    public SecondaryStatsSnapshot CalculateSecondaryStats(PrimaryStats primaryStats)
     {
         SecondaryStatsSnapshot snapshot = new SecondaryStatsSnapshot();
 
@@ -75,9 +75,9 @@ public sealed class StatsConfig : ScriptableObject
         {
             SecondaryStatDefinition definition = _secondaryStats[i];
 
-            if (definition != null && definition.StatType != OrcSecondaryStatType.None)
+            if (definition != null && definition.StatType != SecondaryStatType.None)
             {
-                float minimumValue = definition.StatType == OrcSecondaryStatType.AttackSpeed
+                float minimumValue = definition.StatType == SecondaryStatType.AttackSpeed
                     ? _attackIntervalSeconds
                     : definition.MinimumValue;
                 snapshot.Add(definition.StatType, minimumValue);
@@ -97,7 +97,7 @@ public sealed class StatsConfig : ScriptableObject
         return snapshot;
     }
 
-    public string GetPrimaryStatsSummary(OrcStats primaryStats)
+    public string GetPrimaryStatsSummary(PrimaryStats primaryStats)
     {
         if (primaryStats == null)
         {
@@ -110,7 +110,7 @@ public sealed class StatsConfig : ScriptableObject
         {
             PrimaryStatDefinition definition = _primaryStats[i];
 
-            if (definition == null || definition.StatType == OrcStatType.None)
+            if (definition == null || definition.StatType == PrimaryStatType.None)
             {
                 continue;
             }
@@ -121,16 +121,16 @@ public sealed class StatsConfig : ScriptableObject
 
         if (lines.Count == 0)
         {
-            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(OrcStatType.Endurance), primaryStats.Endurance));
-            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(OrcStatType.Strength), primaryStats.Strength));
-            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(OrcStatType.Agility), primaryStats.Agility));
-            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(OrcStatType.Intelligence), primaryStats.Intelligence));
+            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(PrimaryStatType.Endurance), primaryStats.Endurance));
+            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(PrimaryStatType.Strength), primaryStats.Strength));
+            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(PrimaryStatType.Agility), primaryStats.Agility));
+            lines.Add(FormatPrimaryStatLine(GetFallbackPrimaryStatDisplayName(PrimaryStatType.Intelligence), primaryStats.Intelligence));
         }
 
         return string.Join("\n", lines);
     }
 
-    public string GetPrimaryStatDisplayName(OrcStatType statType)
+    public string GetPrimaryStatDisplayName(PrimaryStatType statType)
     {
         for (int i = 0; i < _primaryStats.Count; i++)
         {
@@ -145,7 +145,7 @@ public sealed class StatsConfig : ScriptableObject
         return GetFallbackPrimaryStatDisplayName(statType);
     }
 
-    public string GetSecondaryStatDisplayName(OrcSecondaryStatType statType)
+    public string GetSecondaryStatDisplayName(SecondaryStatType statType)
     {
         for (int i = 0; i < _secondaryStats.Count; i++)
         {
@@ -160,7 +160,7 @@ public sealed class StatsConfig : ScriptableObject
         return GetFallbackSecondaryStatDisplayName(statType);
     }
 
-    public string GetSecondaryStatsSummary(OrcStats primaryStats)
+    public string GetSecondaryStatsSummary(PrimaryStats primaryStats)
     {
         SecondaryStatsSnapshot snapshot = CalculateSecondaryStats(primaryStats);
         List<string> lines = new List<string>();
@@ -169,7 +169,7 @@ public sealed class StatsConfig : ScriptableObject
         {
             SecondaryStatDefinition definition = _secondaryStats[i];
 
-            if (definition == null || definition.StatType == OrcSecondaryStatType.None)
+            if (definition == null || definition.StatType == SecondaryStatType.None)
             {
                 continue;
             }
@@ -228,40 +228,40 @@ public sealed class StatsConfig : ScriptableObject
         ValidateForRuntime(this);
     }
 
-    private static string GetFallbackPrimaryStatDisplayName(OrcStatType statType)
+    private static string GetFallbackPrimaryStatDisplayName(PrimaryStatType statType)
     {
         switch (statType)
         {
-            case OrcStatType.Endurance:
+            case PrimaryStatType.Endurance:
                 return "Выносливость";
-            case OrcStatType.Strength:
+            case PrimaryStatType.Strength:
                 return "Сила";
-            case OrcStatType.Agility:
+            case PrimaryStatType.Agility:
                 return "Ловкость";
-            case OrcStatType.Intelligence:
+            case PrimaryStatType.Intelligence:
                 return "Интеллект";
             default:
                 return statType.ToString();
         }
     }
 
-    private static string GetFallbackSecondaryStatDisplayName(OrcSecondaryStatType statType)
+    private static string GetFallbackSecondaryStatDisplayName(SecondaryStatType statType)
     {
         switch (statType)
         {
-            case OrcSecondaryStatType.AttackSpeed:
+            case SecondaryStatType.AttackSpeed:
                 return "Скорость атаки";
-            case OrcSecondaryStatType.MeleeDamage:
+            case SecondaryStatType.MeleeDamage:
                 return "Урон в ближнем бою";
-            case OrcSecondaryStatType.MaxHp:
+            case SecondaryStatType.MaxHp:
                 return "Здоровье";
-            case OrcSecondaryStatType.RangedDamage:
+            case SecondaryStatType.RangedDamage:
                 return "Урон в дальнем бою";
-            case OrcSecondaryStatType.ExtraLootChance:
+            case SecondaryStatType.ExtraLootChance:
                 return "Шанс найти больше лута";
-            case OrcSecondaryStatType.DodgeChance:
+            case SecondaryStatType.DodgeChance:
                 return "Уклонение";
-            case OrcSecondaryStatType.Armor:
+            case SecondaryStatType.Armor:
                 return "Броня";
             default:
                 return statType.ToString();
@@ -281,9 +281,9 @@ public sealed class StatsConfig : ScriptableObject
     {
         switch (definition.StatType)
         {
-            case OrcSecondaryStatType.AttackSpeed:
+            case SecondaryStatType.AttackSpeed:
                 return $"{definition.DisplayName}: {FormatValue(Mathf.Max(0.01f, value), " сек.")}";
-            case OrcSecondaryStatType.Armor:
+            case SecondaryStatType.Armor:
                 return FormatArmorStatLine(value, definition.DisplayName, definition.ValueSuffix);
             default:
                 return $"{definition.DisplayName}: {FormatValue(value, definition.ValueSuffix)}";
@@ -293,7 +293,7 @@ public sealed class StatsConfig : ScriptableObject
     private string FormatArmorStatLine(float value, string displayName = null, string valueSuffix = "")
     {
         string armorDisplayName = string.IsNullOrWhiteSpace(displayName)
-            ? GetSecondaryStatDisplayName(OrcSecondaryStatType.Armor)
+            ? GetSecondaryStatDisplayName(SecondaryStatType.Armor)
             : displayName;
         float blockedDamagePercent = CalculateArmorBlockedDamagePercent(value);
         return $"{armorDisplayName}: {FormatValue(value, valueSuffix)}    Блокируется {FormatValue(blockedDamagePercent, "%")} урона.";
@@ -312,7 +312,7 @@ public sealed class StatsConfig : ScriptableObject
     }
 }
 
-public enum OrcSecondaryStatType
+public enum SecondaryStatType
 {
     None = 0,
     AttackSpeed = 1,
@@ -333,12 +333,12 @@ public enum StatModifierMode
 [Serializable]
 public sealed class PrimaryStatDefinition
 {
-    [SerializeField] private OrcStatType _statType = OrcStatType.None;
+    [SerializeField] private PrimaryStatType _statType = PrimaryStatType.None;
     [SerializeField] private string _displayName = "Стат";
     [SerializeField, Min(0)] private int _minimumValue = 1;
     [SerializeField, TextArea] private string _description = "";
 
-    public OrcStatType StatType => _statType;
+    public PrimaryStatType StatType => _statType;
     public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? _statType.ToString() : _displayName;
     public int MinimumValue => _minimumValue;
     public string Description => _description;
@@ -347,13 +347,13 @@ public sealed class PrimaryStatDefinition
 [Serializable]
 public sealed class SecondaryStatDefinition
 {
-    [SerializeField] private OrcSecondaryStatType _statType = OrcSecondaryStatType.None;
+    [SerializeField] private SecondaryStatType _statType = SecondaryStatType.None;
     [SerializeField] private string _displayName = "Вторичный стат";
     [SerializeField] private string _valueSuffix = "";
     [SerializeField, Min(0f)] private float _minimumValue = 0f;
     [SerializeField, TextArea] private string _description = "";
 
-    public OrcSecondaryStatType StatType => _statType;
+    public SecondaryStatType StatType => _statType;
     public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? _statType.ToString() : _displayName;
     public string ValueSuffix => _valueSuffix;
     public float MinimumValue => _minimumValue;
@@ -363,19 +363,19 @@ public sealed class SecondaryStatDefinition
 [Serializable]
 public sealed class StatScalingRule
 {
-    [SerializeField] private OrcStatType _sourceStat = OrcStatType.None;
-    [SerializeField] private OrcSecondaryStatType _targetStat = OrcSecondaryStatType.None;
+    [SerializeField] private PrimaryStatType _sourceStat = PrimaryStatType.None;
+    [SerializeField] private SecondaryStatType _targetStat = SecondaryStatType.None;
     [SerializeField] private StatModifierMode _mode = StatModifierMode.Flat;
     [SerializeField] private float _valuePerPoint = 1f;
     [SerializeField, TextArea] private string _description = "";
 
-    public OrcStatType SourceStat => _sourceStat;
-    public OrcSecondaryStatType TargetStat => _targetStat;
+    public PrimaryStatType SourceStat => _sourceStat;
+    public SecondaryStatType TargetStat => _targetStat;
     public StatModifierMode Mode => _mode;
     public float ValuePerPoint => _valuePerPoint;
     public string Description => _description;
 
-    public float Calculate(OrcStats primaryStats)
+    public float Calculate(PrimaryStats primaryStats)
     {
         if (primaryStats == null)
         {
@@ -405,51 +405,51 @@ public struct SecondaryStatsSnapshot
     public float DodgeChance => _dodgeChance;
     public float Armor => _armor;
 
-    public void Add(OrcSecondaryStatType statType, float value)
+    public void Add(SecondaryStatType statType, float value)
     {
         switch (statType)
         {
-            case OrcSecondaryStatType.AttackSpeed:
+            case SecondaryStatType.AttackSpeed:
                 _attackSpeed = Mathf.Max(0.01f, _attackSpeed + value);
                 break;
-            case OrcSecondaryStatType.MeleeDamage:
+            case SecondaryStatType.MeleeDamage:
                 _meleeDamage += value;
                 break;
-            case OrcSecondaryStatType.MaxHp:
+            case SecondaryStatType.MaxHp:
                 _maxHp += value;
                 break;
-            case OrcSecondaryStatType.RangedDamage:
+            case SecondaryStatType.RangedDamage:
                 _rangedDamage += value;
                 break;
-            case OrcSecondaryStatType.ExtraLootChance:
+            case SecondaryStatType.ExtraLootChance:
                 _extraLootChance += value;
                 break;
-            case OrcSecondaryStatType.DodgeChance:
+            case SecondaryStatType.DodgeChance:
                 _dodgeChance += value;
                 break;
-            case OrcSecondaryStatType.Armor:
+            case SecondaryStatType.Armor:
                 _armor += value;
                 break;
         }
     }
 
-    public float GetValue(OrcSecondaryStatType statType)
+    public float GetValue(SecondaryStatType statType)
     {
         switch (statType)
         {
-            case OrcSecondaryStatType.AttackSpeed:
+            case SecondaryStatType.AttackSpeed:
                 return _attackSpeed;
-            case OrcSecondaryStatType.MeleeDamage:
+            case SecondaryStatType.MeleeDamage:
                 return _meleeDamage;
-            case OrcSecondaryStatType.MaxHp:
+            case SecondaryStatType.MaxHp:
                 return _maxHp;
-            case OrcSecondaryStatType.RangedDamage:
+            case SecondaryStatType.RangedDamage:
                 return _rangedDamage;
-            case OrcSecondaryStatType.ExtraLootChance:
+            case SecondaryStatType.ExtraLootChance:
                 return _extraLootChance;
-            case OrcSecondaryStatType.DodgeChance:
+            case SecondaryStatType.DodgeChance:
                 return _dodgeChance;
-            case OrcSecondaryStatType.Armor:
+            case SecondaryStatType.Armor:
                 return _armor;
             default:
                 return 0f;

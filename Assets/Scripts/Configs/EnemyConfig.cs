@@ -63,8 +63,8 @@ public enum EnemyType
     None = 0,
     GoblinWithClub = 1,
     GoblinWithBow = 2,
-    SkeletonWithSword = 3,
-    SkeletonWithBow = 4
+    HumanSwordsman = 3,
+    HumanArcher = 4
 }
 
 [Serializable]
@@ -75,12 +75,12 @@ public sealed class EnemyDefinition
     [SerializeField, Min(0f)] private float _minimumHp = 0f;
     [SerializeField, Min(0.01f)] private float _attackIntervalSeconds = 1f;
     [SerializeField, Min(0)] private int _experienceReward = 10;
-    [SerializeField] private OrcStats _stats = new OrcStats();
+    [SerializeField] private PrimaryStats _stats = new PrimaryStats();
 
     public string DisplayName => _displayName;
     public EnemyType EnemyType => _enemyType;
     public float MinimumHp => _minimumHp;
     public float AttackIntervalSeconds => _attackIntervalSeconds;
     public int ExperienceReward => Mathf.Max(0, _experienceReward);
-    public OrcStats Stats => _stats;
+    public PrimaryStats Stats => _stats;
 }

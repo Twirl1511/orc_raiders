@@ -7,17 +7,17 @@ public sealed class LevelUpConfig : ScriptableObject
 {
     [SerializeField] private List<PrimaryStatLevelBonus> _primaryStatBonuses = new List<PrimaryStatLevelBonus>();
     [SerializeField, Min(0)] private int _freePrimaryStatPointsPerLevel = 1;
-    [SerializeField, Min(0f)] private float _orcVisualSizeIncreasePercentPerLevel = 15f;
+    [SerializeField, Min(0f)] private float _heroVisualSizeIncreasePercentPerLevel = 15f;
     [SerializeField] private List<LevelExperienceRequirement> _experienceRequirements = new List<LevelExperienceRequirement>();
 
     public IReadOnlyList<PrimaryStatLevelBonus> PrimaryStatBonuses => _primaryStatBonuses;
     public int FreePrimaryStatPointsPerLevel => Mathf.Max(0, _freePrimaryStatPointsPerLevel);
-    public float OrcVisualSizeIncreasePercentPerLevel => Mathf.Max(0f, _orcVisualSizeIncreasePercentPerLevel);
+    public float HeroVisualSizeIncreasePercentPerLevel => Mathf.Max(0f, _heroVisualSizeIncreasePercentPerLevel);
     public IReadOnlyList<LevelExperienceRequirement> ExperienceRequirements => _experienceRequirements;
 
-    public float GetOrcVisualSizeMultiplierForLevel(int level)
+    public float GetHeroVisualSizeMultiplierForLevel(int level)
     {
-        return Mathf.Pow(1f + OrcVisualSizeIncreasePercentPerLevel / 100f, Mathf.Max(0, level - 1));
+        return Mathf.Pow(1f + HeroVisualSizeIncreasePercentPerLevel / 100f, Mathf.Max(0, level - 1));
     }
 
     public bool TryGetRequiredExperience(int level, out int requiredExperience)
@@ -48,7 +48,7 @@ public sealed class LevelUpConfig : ScriptableObject
             return false;
         }
 
-        HashSet<OrcStatType> usedPrimaryStats = new HashSet<OrcStatType>();
+        HashSet<PrimaryStatType> usedPrimaryStats = new HashSet<PrimaryStatType>();
         HashSet<int> usedLevels = new HashSet<int>();
         int maxConfiguredLevel = 0;
 
@@ -56,7 +56,7 @@ public sealed class LevelUpConfig : ScriptableObject
         {
             PrimaryStatLevelBonus bonus = _primaryStatBonuses[i];
 
-            if (bonus == null || bonus.StatType == OrcStatType.None || bonus.ValuePerLevel < 0 ||
+            if (bonus == null || bonus.StatType == PrimaryStatType.None || bonus.ValuePerLevel < 0 ||
                 !usedPrimaryStats.Add(bonus.StatType))
             {
                 return false;
@@ -92,22 +92,22 @@ public sealed class LevelUpConfig : ScriptableObject
         return true;
     }
 
-    private static bool HasAllPrimaryStats(HashSet<OrcStatType> usedPrimaryStats)
+    private static bool HasAllPrimaryStats(HashSet<PrimaryStatType> usedPrimaryStats)
     {
-        return usedPrimaryStats.Contains(OrcStatType.Endurance) &&
-            usedPrimaryStats.Contains(OrcStatType.Strength) &&
-            usedPrimaryStats.Contains(OrcStatType.Agility) &&
-            usedPrimaryStats.Contains(OrcStatType.Intelligence);
+        return usedPrimaryStats.Contains(PrimaryStatType.Endurance) &&
+            usedPrimaryStats.Contains(PrimaryStatType.Strength) &&
+            usedPrimaryStats.Contains(PrimaryStatType.Agility) &&
+            usedPrimaryStats.Contains(PrimaryStatType.Intelligence);
     }
 }
 
 [Serializable]
 public sealed class PrimaryStatLevelBonus
 {
-    [SerializeField] private OrcStatType _statType = OrcStatType.None;
+    [SerializeField] private PrimaryStatType _statType = PrimaryStatType.None;
     [SerializeField, Min(0)] private int _valuePerLevel = 1;
 
-    public OrcStatType StatType => _statType;
+    public PrimaryStatType StatType => _statType;
     public int ValuePerLevel => Mathf.Max(0, _valuePerLevel);
 }
 
