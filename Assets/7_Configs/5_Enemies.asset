@@ -33,3 +33,33 @@ MonoBehaviour:
       _strength: 1
       _agility: 2
       _intelligence: 1
+  - _displayName: "\u0427\u0435\u043B\u043E\u0432\u0435\u043A-\u0432\u043E\u0438\u043D"
+    _enemyType: 3
+    _minimumHp: 0
+    _attackIntervalSeconds: 2.6
+    _experienceReward: 35
+    _stats:
+      _endurance: 3
+      _strength: 3
+      _agility: 1
+      _intelligence: 1
+  - _displayName: "\u0427\u0435\u043B\u043E\u0432\u0435\u043A-\u043B\u0443\u0447\u043D\u0438\u043A"
+    _enemyType: 4
+    _minimumHp: 0
+    _attackIntervalSeconds: 2.4
+    _experienceReward: 35
+    _stats:
+      _endurance: 2
+      _strength: 1
+      _agility: 3
+      _intelligence: 1
+  - _displayName: "\u0427\u0435\u043B\u043E\u0432\u0435\u043A-\u043C\u0430\u0433"
+    _enemyType: 5
+    _minimumHp: 0
+    _attackIntervalSeconds: 2.8
+    _experienceReward: 45
+    _stats:
+      _endurance: 1
+      _strength: 1
+      _agility: 1
+      _intelligence: 4

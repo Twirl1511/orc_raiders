@@ -63,8 +63,9 @@ public enum EnemyType
     None = 0,
     GoblinWithClub = 1,
     GoblinWithBow = 2,
-    HumanSwordsman = 3,
-    HumanArcher = 4
+    HumanWarrior = 3,
+    HumanArcher = 4,
+    HumanMage = 5
 }
 
 [Serializable]

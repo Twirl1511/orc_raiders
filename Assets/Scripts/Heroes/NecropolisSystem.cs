@@ -45,6 +45,9 @@ public sealed class NecropolisSystem : MonoBehaviour
     [Header("Raids")]
     [SerializeField] private RaidSystem _raidSystem = null;
 
+    [Header("Human Village")]
+    [SerializeField] private HumanVillageSystem _humanVillageSystem = null;
+
     private readonly List<DiceRuntimeData> _availableDice = new List<DiceRuntimeData>();
     private readonly List<DiceRuntimeData> _selectedDice = new List<DiceRuntimeData>();
     private readonly List<GameObject> _runtimeDiceButtons = new List<GameObject>();
@@ -291,6 +294,11 @@ public sealed class NecropolisSystem : MonoBehaviour
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires raid system reference.");
         }
+
+        if (_humanVillageSystem == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires human village system reference.");
+        }
     }
 
     private void TryBeginHeroDrag()
@@ -337,6 +345,12 @@ public sealed class NecropolisSystem : MonoBehaviour
         Vector2 screenPosition = Mouse.current.position.ReadValue();
 
         if (_raidSystem.TryAcceptDroppedHero(heroData, screenPosition))
+        {
+            _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
+            return;
+        }
+
+        if (_humanVillageSystem.TryAcceptDroppedHero(heroData, screenPosition))
         {
             _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
             return;
