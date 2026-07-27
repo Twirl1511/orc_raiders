@@ -13,8 +13,15 @@ MonoBehaviour:
   m_Name: 8_Human Village
   m_EditorClassIdentifier: Assembly-CSharp::HumanVillageConfig
   _rosterSize: 3
-  _scoutingSeconds: 4
-  _rosterEnemyTypes:
-  - 3
-  - 4
-  - 5
+  _scoutingSeconds: 30
+  _scoutingBlockCount: 2
+  _scoutingSecondsReductionPercentPerIntelligence: 3
+  _scoutingSecondsReductionPercentPerAgility: 2
+  _baseScoutingSuccessChancePercent: 55
+  _scoutingSuccessChancePercentPerLevel: 5
+  _scoutingSuccessChancePercentPerAgility: 2
+  _scoutingSuccessChancePercentPerIntelligence: 3
+  _earlyScoutingBlockSuccessBonusGapPercent: 50
+  _scoutingFailureAttackReadinessPercent: 10
+  _secondsUntilVillageAttack: 500
+  _rosterEnemyTypes: 030000000400000005000000
