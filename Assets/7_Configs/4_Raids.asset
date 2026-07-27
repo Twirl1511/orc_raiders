@@ -16,6 +16,9 @@ MonoBehaviour:
   _newRaidIntervalSeconds: 60
   _useManualRaidSpawnButton: 1
   _waitingRaidLifetimeSeconds: 60
+  _minHeroSlots: 1
+  _maxHeroSlots: 3
+  _additionalHeroWindowSeconds: 4
   _minGoldReward: 10
   _maxGoldReward: 35
   _minEnemies: 5

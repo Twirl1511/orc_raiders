@@ -26,6 +26,7 @@ public sealed class RaidSystem : MonoBehaviour
     [SerializeField, Min(1)] private int _panelsPerRow = 2;
 
     private readonly List<RaidRuntimeData> _raids = new List<RaidRuntimeData>();
+    private readonly List<RaidHeroViewData> _heroViewData = new List<RaidHeroViewData>();
     private readonly List<RaidEnemyViewData> _enemyViewData = new List<RaidEnemyViewData>();
 
     private float _newRaidTimer;
@@ -81,10 +82,11 @@ public sealed class RaidSystem : MonoBehaviour
         {
             RaidRuntimeData raid = _raids[i];
 
-            if (raid.State == RaidState.Waiting && raid.Panel.ContainsScreenPoint(screenPosition, UiCamera))
+            bool canAcceptHero = raid.State == RaidState.Waiting || raid.State == RaidState.Recruiting;
+
+            if (canAcceptHero && raid.Panel.ContainsScreenPoint(screenPosition, UiCamera))
             {
-                StartRaid(raid, heroData);
-                return true;
+                return TryAddHeroToRaid(raid, heroData);
             }
         }
 
@@ -206,7 +208,7 @@ public sealed class RaidSystem : MonoBehaviour
     private void RefreshWaitingRaidUi(RaidRuntimeData raid)
     {
         float remainingSeconds = Mathf.Max(0f, _raidConfig.WaitingRaidLifetimeSeconds - raid.WaitingSeconds);
-        raid.Panel.ShowWaiting(raid.Id, remainingSeconds);
+        raid.Panel.ShowWaiting(raid.Id, remainingSeconds, raid.Heroes.Count, raid.MaxHeroSlots);
     }
 
     private void UpdateRaid(RaidRuntimeData raid, float deltaTime)
@@ -221,6 +223,9 @@ public sealed class RaidSystem : MonoBehaviour
                 }
 
                 RefreshWaitingRaidUi(raid);
+                break;
+            case RaidState.Recruiting:
+                UpdateRaidRecruiting(raid, deltaTime);
                 break;
             case RaidState.InProgress:
                 UpdateRaidBattle(raid, deltaTime);
@@ -241,7 +246,7 @@ public sealed class RaidSystem : MonoBehaviour
         panel.gameObject.SetActive(true);
         panel.InitializeRuntime();
 
-        RaidRuntimeData raid = new RaidRuntimeData(_nextRaidId, panel, layoutSlot);
+        RaidRuntimeData raid = new RaidRuntimeData(_nextRaidId, panel, layoutSlot, GetRandomHeroSlotCount());
         panel.CloseRequested += () => RemoveRaid(raid);
 
         _nextRaidId++;
@@ -250,12 +255,87 @@ public sealed class RaidSystem : MonoBehaviour
         RefreshWaitingRaidUi(raid);
     }
 
-    private void StartRaid(RaidRuntimeData raid, HeroRuntimeData heroData)
+    private int GetRandomHeroSlotCount()
     {
+        return Random.Range(_raidConfig.MinHeroSlots, _raidConfig.MaxHeroSlots + 1);
+    }
+
+    private bool TryAddHeroToRaid(RaidRuntimeData raid, HeroRuntimeData heroData)
+    {
+        if (heroData == null || raid.Heroes.Count >= raid.MaxHeroSlots || ContainsHero(raid, heroData))
+        {
+            return false;
+        }
+
+        AddHeroToRaid(raid, heroData);
+
+        if (raid.Heroes.Count >= raid.MaxHeroSlots || _raidConfig.AdditionalHeroWindowSeconds <= 0f)
+        {
+            StartRaidBattle(raid);
+            return true;
+        }
+
+        raid.State = RaidState.Recruiting;
+        raid.RecruitingSecondsRemaining = _raidConfig.AdditionalHeroWindowSeconds;
+        RefreshRecruitingRaidUi(raid);
+        return true;
+    }
+
+    private void AddHeroToRaid(RaidRuntimeData raid, HeroRuntimeData heroData)
+    {
+        RaidHeroRuntimeData raidHero = new RaidHeroRuntimeData(heroData);
+        raid.Heroes.Add(raidHero);
+        RefreshRaidHeroCombatStats(raidHero);
+        _necropolisSystem.SetHeroState(heroData, HeroActivityState.InRaid);
+    }
+
+    private bool ContainsHero(RaidRuntimeData raid, HeroRuntimeData heroData)
+    {
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (raid.Heroes[i].Hero == heroData)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void UpdateRaidRecruiting(RaidRuntimeData raid, float deltaTime)
+    {
+        raid.RecruitingSecondsRemaining -= deltaTime;
+
+        if (raid.RecruitingSecondsRemaining <= 0f)
+        {
+            StartRaidBattle(raid);
+            return;
+        }
+
+        RefreshRecruitingRaidUi(raid);
+    }
+
+    private void RefreshRecruitingRaidUi(RaidRuntimeData raid)
+    {
+        BuildHeroViewData(raid, false);
+        raid.Panel.ShowRecruiting(
+            raid.Id,
+            raid.RecruitingSecondsRemaining,
+            raid.Heroes.Count,
+            raid.MaxHeroSlots,
+            _heroViewData);
+    }
+
+    private void StartRaidBattle(RaidRuntimeData raid)
+    {
+        if (raid.Heroes.Count == 0)
+        {
+            return;
+        }
+
         raid.State = RaidState.InProgress;
-        raid.Hero = heroData;
         RefreshRaidHeroCombatStats(raid);
-        raid.HeroAttackProgress = 0f;
+        ResetHeroAttackProgress(raid);
         raid.KilledEnemies = 0;
         raid.ExperienceGained = 0;
         raid.TotalGold = Random.Range(_raidConfig.MinGoldReward, _raidConfig.MaxGoldReward + 1);
@@ -269,7 +349,6 @@ public sealed class RaidSystem : MonoBehaviour
         GenerateEnemies(raid);
         BuildRaidProgressTimeline(raid);
         BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
-        _necropolisSystem.SetHeroState(heroData, HeroActivityState.InRaid);
         RefreshRaidBattleUi(raid);
     }
 
@@ -380,15 +459,14 @@ public sealed class RaidSystem : MonoBehaviour
 
     private float EstimateBattleProgressSegmentSeconds(RaidRuntimeData raid, int startIndex, int endIndex)
     {
-        int attacksNeeded = 0;
-        float damage = Mathf.Max(1f, raid.HeroDamage);
+        float totalEnemyHp = 0f;
 
         for (int i = startIndex; i < endIndex; i++)
         {
-            attacksNeeded += Mathf.Max(1, Mathf.CeilToInt(raid.Enemies[i].MaxHp / damage));
+            totalEnemyHp += raid.Enemies[i].MaxHp;
         }
 
-        return Mathf.Max(_minimumProgressSegmentSeconds, attacksNeeded * Mathf.Max(0.01f, raid.HeroAttackInterval));
+        return Mathf.Max(_minimumProgressSegmentSeconds, totalEnemyHp / GetRaidDamagePerSecond(raid));
     }
 
     private void BeginProgressSegment(RaidRuntimeData raid, int segmentIndex)
@@ -457,7 +535,7 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void UpdateRaidBattle(RaidRuntimeData raid, float deltaTime)
     {
-        if (raid.HeroHp <= 0f)
+        if (!HasAliveHero(raid))
         {
             CompleteRaid(raid, false);
             return;
@@ -489,35 +567,46 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void UpdateHeroAttack(RaidRuntimeData raid, float deltaTime)
     {
-        raid.HeroAttackProgress += deltaTime / raid.HeroAttackInterval;
-
-        if (raid.HeroAttackProgress < 1f)
+        for (int i = 0; i < raid.Heroes.Count; i++)
         {
-            return;
+            RaidHeroRuntimeData raidHero = raid.Heroes[i];
+
+            if (raidHero.Hp <= 0f)
+            {
+                raidHero.AttackProgress = 0f;
+                raidHero.TargetEnemyIndex = -1;
+                continue;
+            }
+
+            raidHero.AttackProgress += deltaTime / raidHero.AttackInterval;
+
+            if (raidHero.AttackProgress < 1f)
+            {
+                continue;
+            }
+
+            raidHero.AttackProgress = 0f;
+            EnemyRuntimeData target = GetHeroTargetEnemyInCurrentBattle(raid, raidHero, out int enemyIndexInBattle);
+
+            if (target == null)
+            {
+                return;
+            }
+
+            float hpBeforeAttack = target.Hp;
+            target.Hp = Mathf.Max(0f, target.Hp - raidHero.Damage);
+
+            if (hpBeforeAttack > 0f && target.Hp <= 0f)
+            {
+                raid.KilledEnemies++;
+                AwardExperienceToRaidHeroes(raid, target.ExperienceReward);
+                QueueGoldForKill(raid);
+                raidHero.TargetEnemyIndex = -1;
+            }
+
+            StartCoroutine(raid.Panel.PlayHeroAttackEffect(i, enemyIndexInBattle));
+            StartCoroutine(raid.Panel.ShakeEnemyHpBar(enemyIndexInBattle));
         }
-
-        raid.HeroAttackProgress = 0f;
-        EnemyRuntimeData target = GetFirstAliveEnemyInCurrentBattle(raid, out int enemyIndexInBattle);
-
-        if (target == null)
-        {
-            return;
-        }
-
-        float hpBeforeAttack = target.Hp;
-        target.Hp = Mathf.Max(0f, target.Hp - raid.HeroDamage);
-
-        if (hpBeforeAttack > 0f && target.Hp <= 0f)
-        {
-            raid.KilledEnemies++;
-            raid.ExperienceGained += target.ExperienceReward;
-            _necropolisSystem.AddExperienceToHero(raid.Hero, target.ExperienceReward);
-            RefreshRaidHeroCombatStats(raid);
-            QueueGoldForKill(raid);
-        }
-
-        StartCoroutine(raid.Panel.PlayHeroAttackEffect(enemyIndexInBattle));
-        StartCoroutine(raid.Panel.ShakeEnemyHpBar(enemyIndexInBattle));
     }
 
     private void UpdateEnemyAttacks(RaidRuntimeData raid, float deltaTime)
@@ -540,14 +629,22 @@ public sealed class RaidSystem : MonoBehaviour
                 continue;
             }
 
-            enemy.AttackProgress = 0f;
-            float blockedDamagePercent = _statsConfig.CalculateArmorBlockedDamagePercent(raid.HeroSecondaryStats.Armor);
-            float damageMultiplier = Mathf.Clamp01(1f - blockedDamagePercent / 100f);
-            raid.HeroHp = Mathf.Max(0f, raid.HeroHp - Mathf.Max(1f, enemy.Damage * damageMultiplier));
-            raid.Hero.SetCurrentHp(raid.HeroHp);
-            StartCoroutine(raid.Panel.ShakeHeroHpBar());
+            RaidHeroRuntimeData targetHero = GetRandomAliveHero(raid, out int heroIndex);
 
-            if (raid.HeroHp <= 0f)
+            if (targetHero == null)
+            {
+                CompleteRaid(raid, false);
+                return;
+            }
+
+            enemy.AttackProgress = 0f;
+            float blockedDamagePercent = _statsConfig.CalculateArmorBlockedDamagePercent(targetHero.SecondaryStats.Armor);
+            float damageMultiplier = Mathf.Clamp01(1f - blockedDamagePercent / 100f);
+            targetHero.Hp = Mathf.Max(0f, targetHero.Hp - Mathf.Max(1f, enemy.Damage * damageMultiplier));
+            targetHero.Hero.SetCurrentHp(targetHero.Hp);
+            StartCoroutine(raid.Panel.ShakeHeroHpBar(heroIndex));
+
+            if (!HasAliveHero(raid))
             {
                 CompleteRaid(raid, false);
                 return;
@@ -563,7 +660,7 @@ public sealed class RaidSystem : MonoBehaviour
         raid.State = RaidState.BattleTransition;
         raid.BattleTransitionTimer = 0f;
         raid.BattleTransitionSeconds = _raidConfig.BattleTransitionDelaySeconds;
-        raid.HeroAttackProgress = 0f;
+        ResetHeroAttackProgress(raid);
         BeginProgressSegment(raid, GetTransitionProgressSegmentIndex(raid.CurrentBattleNumber));
         BeginLootGoldCollection(raid);
 
@@ -600,7 +697,7 @@ public sealed class RaidSystem : MonoBehaviour
         raid.State = RaidState.InProgress;
         raid.CurrentBattleNumber++;
         raid.CurrentBattleStartIndex = GetBattleStartIndex(raid, raid.CurrentBattleNumber);
-        raid.HeroAttackProgress = 0f;
+        ResetHeroAttackProgress(raid);
         raid.BattleTransitionTimer = 0f;
         raid.CompleteAfterLoot = false;
         BeginProgressSegment(raid, GetBattleProgressSegmentIndex(raid.CurrentBattleNumber));
@@ -638,19 +735,31 @@ public sealed class RaidSystem : MonoBehaviour
         _gold += raid.GoldFound;
         RefreshGoldText();
 
-        if (raid.Hero != null)
+        for (int i = 0; i < raid.Heroes.Count; i++)
         {
-            raid.Hero.SetCurrentHp(raid.HeroHp);
-            _necropolisSystem.SetHeroState(raid.Hero, success ? HeroActivityState.OnBase : HeroActivityState.Resting);
+            RaidHeroRuntimeData raidHero = raid.Heroes[i];
+            raidHero.Hero.SetCurrentHp(raidHero.Hp);
+            HeroActivityState heroState = success && raidHero.Hp > 0f ? HeroActivityState.OnBase : HeroActivityState.Resting;
+            _necropolisSystem.SetHeroState(raidHero.Hero, heroState);
         }
 
-        string message = success ? GetSuccessMessage(raid) : "Герой проиграл бой и ушел отдыхать.";
-        raid.Panel.ShowCompleted(raid.Id, success, message, raid.KilledEnemies, raid.Enemies.Count, GetRaidProgressRatio(raid), raid.GoldFound, raid.ExperienceGained);
+        string message = success ? GetSuccessMessage(raid) : "Отряд проиграл бой. Раненые герои ушли отдыхать.";
+        BuildHeroViewData(raid, false);
+        raid.Panel.ShowCompleted(
+            raid.Id,
+            success,
+            message,
+            raid.KilledEnemies,
+            raid.Enemies.Count,
+            GetRaidProgressRatio(raid),
+            raid.GoldFound,
+            raid.ExperienceGained,
+            _heroViewData);
     }
 
     private static string GetSuccessMessage(RaidRuntimeData raid)
     {
-        string message = "Герой прошел рейд и вернулся на базу.";
+        string message = "Отряд прошел рейд и вернулся на базу.";
 
         if (raid.RewardDice != null)
         {
@@ -670,13 +779,20 @@ public sealed class RaidSystem : MonoBehaviour
         for (int i = 0; i < _raids.Count; i++)
         {
             RaidRuntimeData raid = _raids[i];
+            RaidHeroRuntimeData raidHero = GetRaidHero(raid, heroData);
 
-            if (raid.Hero != heroData || raid.State == RaidState.Waiting || raid.State == RaidState.Completed)
+            if (raidHero == null || raid.State == RaidState.Waiting || raid.State == RaidState.Completed)
             {
                 continue;
             }
 
-            RefreshRaidHeroCombatStats(raid);
+            RefreshRaidHeroCombatStats(raidHero);
+
+            if (raid.State == RaidState.Recruiting)
+            {
+                RefreshRecruitingRaidUi(raid);
+                continue;
+            }
 
             if (raid.State == RaidState.BattleTransition)
             {
@@ -767,6 +883,7 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void RefreshRaidBattleUi(RaidRuntimeData raid)
     {
+        BuildHeroViewData(raid, true);
         _enemyViewData.Clear();
 
         int endIndex = GetCurrentBattleEndIndex(raid);
@@ -781,10 +898,7 @@ public sealed class RaidSystem : MonoBehaviour
             raid.Id,
             raid.CurrentBattleNumber,
             raid.BattleCount,
-            raid.Hero.Name,
-            raid.HeroHp,
-            raid.HeroMaxHp,
-            raid.HeroAttackProgress,
+            _heroViewData,
             raid.KilledEnemies,
             raid.Enemies.Count,
             GetRaidProgressRatio(raid),
@@ -793,15 +907,26 @@ public sealed class RaidSystem : MonoBehaviour
             _enemyViewData);
     }
 
+    private void BuildHeroViewData(RaidRuntimeData raid, bool showAttackProgress)
+    {
+        _heroViewData.Clear();
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            RaidHeroRuntimeData hero = raid.Heroes[i];
+            float attackProgress = showAttackProgress && hero.Hp > 0f ? hero.AttackProgress : 0f;
+            _heroViewData.Add(new RaidHeroViewData(hero.Hero.Name, hero.Hp, hero.MaxHp, attackProgress));
+        }
+    }
+
     private void RefreshBattleTransitionUi(RaidRuntimeData raid)
     {
+        BuildHeroViewData(raid, false);
         raid.Panel.ShowBattleTransition(
             raid.Id,
             raid.CurrentBattleNumber + 1,
             raid.BattleCount,
-            raid.Hero.Name,
-            raid.HeroHp,
-            raid.HeroMaxHp,
+            _heroViewData,
             GetRaidProgressRatio(raid),
             raid.KilledEnemies,
             raid.Enemies.Count,
@@ -846,6 +971,42 @@ public sealed class RaidSystem : MonoBehaviour
         raid.GoldFound = Mathf.Max(raid.GoldFound, raid.LootGoldTarget);
     }
 
+    private void AwardExperienceToRaidHeroes(RaidRuntimeData raid, int totalExperience)
+    {
+        if (totalExperience <= 0 || raid.Heroes.Count == 0)
+        {
+            return;
+        }
+
+        raid.ExperienceGained += totalExperience;
+
+        int[] experienceShares = new int[raid.Heroes.Count];
+        int baseExperience = totalExperience / raid.Heroes.Count;
+        int remainder = totalExperience % raid.Heroes.Count;
+
+        for (int i = 0; i < experienceShares.Length; i++)
+        {
+            experienceShares[i] = baseExperience;
+        }
+
+        while (remainder > 0)
+        {
+            int weakestHeroIndex = GetRandomWeakestHeroIndex(raid, experienceShares);
+            experienceShares[weakestHeroIndex]++;
+            remainder--;
+        }
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (experienceShares[i] > 0)
+            {
+                _necropolisSystem.AddExperienceToHero(raid.Heroes[i].Hero, experienceShares[i]);
+            }
+        }
+
+        RefreshRaidHeroCombatStats(raid);
+    }
+
     private void RefreshGoldText()
     {
         _goldText.text = $"Золото: {_gold}";
@@ -853,12 +1014,188 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void RefreshRaidHeroCombatStats(RaidRuntimeData raid)
     {
-        raid.HeroSecondaryStats = _statsConfig.CalculateSecondaryStats(raid.Hero.Stats);
-        raid.Hero.SetMaxHp(Mathf.Max(1f, raid.HeroSecondaryStats.MaxHp), false);
-        raid.HeroMaxHp = raid.Hero.MaxHp;
-        raid.HeroHp = Mathf.Clamp(raid.Hero.CurrentHp, 0f, raid.HeroMaxHp);
-        raid.HeroAttackInterval = Mathf.Max(0.01f, raid.HeroSecondaryStats.AttackSpeed);
-        raid.HeroDamage = Mathf.Max(1f, raid.HeroSecondaryStats.MeleeDamage);
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            RefreshRaidHeroCombatStats(raid.Heroes[i]);
+        }
+    }
+
+    private void RefreshRaidHeroCombatStats(RaidHeroRuntimeData raidHero)
+    {
+        raidHero.SecondaryStats = _statsConfig.CalculateSecondaryStats(raidHero.Hero.Stats);
+        raidHero.Hero.SetMaxHp(Mathf.Max(1f, raidHero.SecondaryStats.MaxHp), false);
+        raidHero.MaxHp = raidHero.Hero.MaxHp;
+
+        float currentHp = raidHero.Hp > 0f ? raidHero.Hp : raidHero.Hero.CurrentHp;
+        raidHero.Hp = Mathf.Clamp(currentHp, 0f, raidHero.MaxHp);
+        raidHero.AttackInterval = Mathf.Max(0.01f, raidHero.SecondaryStats.AttackSpeed);
+        raidHero.Damage = Mathf.Max(1f, raidHero.SecondaryStats.MeleeDamage);
+        raidHero.Hero.SetCurrentHp(raidHero.Hp);
+    }
+
+    private static void ResetHeroAttackProgress(RaidRuntimeData raid)
+    {
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            raid.Heroes[i].AttackProgress = 0f;
+            raid.Heroes[i].TargetEnemyIndex = -1;
+        }
+    }
+
+    private static float GetRaidDamagePerSecond(RaidRuntimeData raid)
+    {
+        float damagePerSecond = 0f;
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            RaidHeroRuntimeData raidHero = raid.Heroes[i];
+            damagePerSecond += Mathf.Max(1f, raidHero.Damage) / Mathf.Max(0.01f, raidHero.AttackInterval);
+        }
+
+        return Mathf.Max(0.01f, damagePerSecond);
+    }
+
+    private static bool HasAliveHero(RaidRuntimeData raid)
+    {
+        return GetFirstAliveHero(raid) != null;
+    }
+
+    private static RaidHeroRuntimeData GetRandomAliveHero(RaidRuntimeData raid, out int heroIndex)
+    {
+        int aliveCount = 0;
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (raid.Heroes[i].Hp > 0f)
+            {
+                aliveCount++;
+            }
+        }
+
+        if (aliveCount == 0)
+        {
+            heroIndex = -1;
+            return null;
+        }
+
+        int selectedAliveIndex = Random.Range(0, aliveCount);
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (raid.Heroes[i].Hp <= 0f)
+            {
+                continue;
+            }
+
+            if (selectedAliveIndex == 0)
+            {
+                heroIndex = i;
+                return raid.Heroes[i];
+            }
+
+            selectedAliveIndex--;
+        }
+
+        heroIndex = -1;
+        return null;
+    }
+
+    private static RaidHeroRuntimeData GetFirstAliveHero(RaidRuntimeData raid)
+    {
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (raid.Heroes[i].Hp > 0f)
+            {
+                return raid.Heroes[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static int GetRandomWeakestHeroIndex(RaidRuntimeData raid, int[] pendingExperience)
+    {
+        int selectedIndex = -1;
+        int equalWeakestCount = 0;
+
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (selectedIndex < 0 ||
+                IsWeakerForExperienceRemainder(raid.Heroes[i], pendingExperience[i], raid.Heroes[selectedIndex], pendingExperience[selectedIndex]))
+            {
+                selectedIndex = i;
+                equalWeakestCount = 1;
+                continue;
+            }
+
+            if (HasEqualWeaknessForExperienceRemainder(raid.Heroes[i], pendingExperience[i], raid.Heroes[selectedIndex], pendingExperience[selectedIndex]))
+            {
+                equalWeakestCount++;
+
+                if (Random.Range(0, equalWeakestCount) == 0)
+                {
+                    selectedIndex = i;
+                }
+            }
+        }
+
+        return Mathf.Max(0, selectedIndex);
+    }
+
+    private static bool IsWeakerForExperienceRemainder(
+        RaidHeroRuntimeData candidate,
+        int candidatePendingExperience,
+        RaidHeroRuntimeData current,
+        int currentPendingExperience)
+    {
+        if (candidate.Hero.Level != current.Hero.Level)
+        {
+            return candidate.Hero.Level < current.Hero.Level;
+        }
+
+        int candidateStats = GetPrimaryStatsTotal(candidate.Hero.Stats);
+        int currentStats = GetPrimaryStatsTotal(current.Hero.Stats);
+
+        if (candidateStats != currentStats)
+        {
+            return candidateStats < currentStats;
+        }
+
+        return candidate.Hero.Experience + candidatePendingExperience < current.Hero.Experience + currentPendingExperience;
+    }
+
+    private static bool HasEqualWeaknessForExperienceRemainder(
+        RaidHeroRuntimeData candidate,
+        int candidatePendingExperience,
+        RaidHeroRuntimeData current,
+        int currentPendingExperience)
+    {
+        return candidate.Hero.Level == current.Hero.Level &&
+            GetPrimaryStatsTotal(candidate.Hero.Stats) == GetPrimaryStatsTotal(current.Hero.Stats) &&
+            candidate.Hero.Experience + candidatePendingExperience == current.Hero.Experience + currentPendingExperience;
+    }
+
+    private static int GetPrimaryStatsTotal(PrimaryStats stats)
+    {
+        if (stats == null)
+        {
+            return 0;
+        }
+
+        return stats.Endurance + stats.Strength + stats.Agility + stats.Intelligence;
+    }
+
+    private static RaidHeroRuntimeData GetRaidHero(RaidRuntimeData raid, HeroRuntimeData heroData)
+    {
+        for (int i = 0; i < raid.Heroes.Count; i++)
+        {
+            if (raid.Heroes[i].Hero == heroData)
+            {
+                return raid.Heroes[i];
+            }
+        }
+
+        return null;
     }
 
     private float CalculateEnemyMaxHp(EnemyDefinition definition, SecondaryStatsSnapshot secondaryStats)
@@ -890,6 +1227,71 @@ public sealed class RaidSystem : MonoBehaviour
 
         enemyIndexInBattle = -1;
         return null;
+    }
+
+    private EnemyRuntimeData GetHeroTargetEnemyInCurrentBattle(
+        RaidRuntimeData raid,
+        RaidHeroRuntimeData raidHero,
+        out int enemyIndexInBattle)
+    {
+        if (!IsEnemyTargetValidInCurrentBattle(raid, raidHero.TargetEnemyIndex))
+        {
+            raidHero.TargetEnemyIndex = GetRandomAliveEnemyIndexInCurrentBattle(raid);
+        }
+
+        if (raidHero.TargetEnemyIndex < 0)
+        {
+            enemyIndexInBattle = -1;
+            return null;
+        }
+
+        enemyIndexInBattle = raidHero.TargetEnemyIndex - raid.CurrentBattleStartIndex;
+        return raid.Enemies[raidHero.TargetEnemyIndex];
+    }
+
+    private bool IsEnemyTargetValidInCurrentBattle(RaidRuntimeData raid, int enemyIndex)
+    {
+        return enemyIndex >= raid.CurrentBattleStartIndex &&
+            enemyIndex < GetCurrentBattleEndIndex(raid) &&
+            raid.Enemies[enemyIndex].Hp > 0f;
+    }
+
+    private int GetRandomAliveEnemyIndexInCurrentBattle(RaidRuntimeData raid)
+    {
+        int aliveCount = 0;
+        int endIndex = GetCurrentBattleEndIndex(raid);
+
+        for (int i = raid.CurrentBattleStartIndex; i < endIndex; i++)
+        {
+            if (raid.Enemies[i].Hp > 0f)
+            {
+                aliveCount++;
+            }
+        }
+
+        if (aliveCount == 0)
+        {
+            return -1;
+        }
+
+        int selectedAliveIndex = Random.Range(0, aliveCount);
+
+        for (int i = raid.CurrentBattleStartIndex; i < endIndex; i++)
+        {
+            if (raid.Enemies[i].Hp <= 0f)
+            {
+                continue;
+            }
+
+            if (selectedAliveIndex == 0)
+            {
+                return i;
+            }
+
+            selectedAliveIndex--;
+        }
+
+        return -1;
     }
 
     private int GetCurrentBattleEndIndex(RaidRuntimeData raid)
@@ -928,9 +1330,10 @@ public sealed class RaidSystem : MonoBehaviour
     private enum RaidState
     {
         Waiting = 0,
-        InProgress = 1,
-        BattleTransition = 2,
-        Completed = 3
+        Recruiting = 1,
+        InProgress = 2,
+        BattleTransition = 3,
+        Completed = 4
     }
 
     private sealed class RaidRuntimeData
@@ -939,19 +1342,15 @@ public sealed class RaidSystem : MonoBehaviour
         public readonly RaidPanelView Panel;
         public readonly int LayoutSlot;
         public readonly List<EnemyRuntimeData> Enemies = new List<EnemyRuntimeData>();
+        public readonly List<RaidHeroRuntimeData> Heroes = new List<RaidHeroRuntimeData>();
         public readonly List<int> BattleStartIndices = new List<int>();
         public readonly List<int> BattleEnemyCounts = new List<int>();
         public readonly List<float> ProgressSegmentDurations = new List<float>();
+        public readonly int MaxHeroSlots;
 
         public RaidState State;
         public float WaitingSeconds;
-        public HeroRuntimeData Hero;
-        public SecondaryStatsSnapshot HeroSecondaryStats;
-        public float HeroHp;
-        public float HeroMaxHp;
-        public float HeroDamage;
-        public float HeroAttackInterval;
-        public float HeroAttackProgress;
+        public float RecruitingSecondsRemaining;
         public int CurrentBattleStartIndex;
         public int CurrentBattleNumber;
         public int BattleCount;
@@ -971,12 +1370,31 @@ public sealed class RaidSystem : MonoBehaviour
         public float ProgressSegmentTimer;
         public float TotalProgressSeconds;
 
-        public RaidRuntimeData(int id, RaidPanelView panel, int layoutSlot)
+        public RaidRuntimeData(int id, RaidPanelView panel, int layoutSlot, int maxHeroSlots)
         {
             Id = id;
             Panel = panel;
             LayoutSlot = layoutSlot;
+            MaxHeroSlots = Mathf.Clamp(maxHeroSlots, 1, 3);
             State = RaidState.Waiting;
+        }
+    }
+
+    private sealed class RaidHeroRuntimeData
+    {
+        public readonly HeroRuntimeData Hero;
+
+        public SecondaryStatsSnapshot SecondaryStats;
+        public float Hp;
+        public float MaxHp;
+        public float Damage;
+        public float AttackInterval;
+        public float AttackProgress;
+        public int TargetEnemyIndex = -1;
+
+        public RaidHeroRuntimeData(HeroRuntimeData hero)
+        {
+            Hero = hero;
         }
     }
 
