@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler, IScrollHandler
 {
     [SerializeField] private Image _background = null;
     [SerializeField] private Image _icon = null;
@@ -72,6 +72,16 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
     {
         ItemRuntimeData item = _hero != null ? _hero.GetEquippedItem(_slotIndex) : null;
         _itemTooltip?.HideItem(item);
+    }
+
+    public void OnScroll(PointerEventData eventData)
+    {
+        ItemRuntimeData item = _hero != null ? _hero.GetEquippedItem(_slotIndex) : null;
+
+        if (item != null && item.Definition != null && eventData != null)
+        {
+            _itemTooltip?.AdjustScale(eventData.scrollDelta.y);
+        }
     }
 
     private void Refresh()

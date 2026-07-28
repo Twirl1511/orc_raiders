@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,23 +27,31 @@ public sealed class ItemTooltipView : MonoBehaviour
     private readonly Vector3[] _anchorWorldCorners = new Vector3[4];
     private Canvas _canvas;
     private StatsConfig _statsConfig;
+    private TooltipConfig _tooltipConfig;
+    private Coroutine _animation;
+    private RectTransform _currentAnchor;
+    private Vector2 _currentBaseSize;
     private ItemRuntimeData _shownItem;
+    private float _preferredScale = 1f;
+    private float _currentScale = 1f;
 
     private void Awake()
     {
-        Hide();
+        ForceHide();
     }
 
     private void OnDisable()
     {
-        Hide();
+        ForceHide();
     }
 
-    public void Configure(Canvas canvas, StatsConfig statsConfig)
+    public void Configure(Canvas canvas, StatsConfig statsConfig, TooltipConfig tooltipConfig)
     {
         _canvas = canvas;
         _statsConfig = statsConfig;
-        Hide();
+        _tooltipConfig = tooltipConfig;
+        _preferredScale = ClampTooltipScale(_preferredScale);
+        ForceHide();
     }
 
     public void ShowItem(ItemRuntimeData item, RectTransform anchor)
@@ -55,7 +64,10 @@ public sealed class ItemTooltipView : MonoBehaviour
             return;
         }
 
+        StopAnimation();
         _shownItem = item;
+        _currentAnchor = anchor;
+        _currentScale = ClampTooltipScale(_preferredScale);
         _panel.gameObject.SetActive(true);
         _panel.SetAsLastSibling();
 
@@ -72,9 +84,11 @@ public sealed class ItemTooltipView : MonoBehaviour
         PrepareText(_titleText);
         PrepareText(_bodyText);
 
-        Vector2 tooltipSize = ResizeToContent();
-        ShowCanvasGroup();
-        PositionNearAnchor(anchor, tooltipSize);
+        _currentBaseSize = ResizeToContent();
+        PrepareVisibleCanvasGroup(0f);
+        _panel.localScale = Vector3.one * GetCollapsedScale();
+        PositionNearAnchor(anchor, _currentBaseSize);
+        StartVisibilityAnimation(0f, 1f, GetCollapsedScale(), _currentScale, false);
     }
 
     public void HideItem(ItemRuntimeData item)
@@ -88,12 +102,76 @@ public sealed class ItemTooltipView : MonoBehaviour
     public void Hide()
     {
         _shownItem = null;
+        _currentAnchor = null;
 
+        if (!Application.isPlaying || !isActiveAndEnabled || _panel == null || _canvasGroup == null ||
+            _canvasGroup.alpha <= 0f)
+        {
+            ForceHide();
+            return;
+        }
+
+        StopAnimation();
+        StartVisibilityAnimation(_canvasGroup.alpha, 0f, _panel.localScale.x, GetCollapsedScale(), true);
+    }
+
+    public void AdjustScale(float scrollDelta)
+    {
+        if (_shownItem == null || _currentAnchor == null || _panel == null || Mathf.Approximately(scrollDelta, 0f))
+        {
+            return;
+        }
+
+        float step = GetScrollScaleStep();
+
+        if (step <= 0f)
+        {
+            return;
+        }
+
+        float direction = scrollDelta > 0f ? 1f : -1f;
+        float nextScale = Mathf.Clamp(_currentScale + direction * step, GetMinScale(), GetMaxScale());
+
+        if (Mathf.Approximately(nextScale, _currentScale))
+        {
+            return;
+        }
+
+        StopAnimation();
+        _currentScale = nextScale;
+        _preferredScale = nextScale;
+        PrepareVisibleCanvasGroup(1f);
+        _panel.localScale = Vector3.one * _currentScale;
+        PositionNearAnchor(_currentAnchor, _currentBaseSize);
+    }
+
+    private void ForceHide()
+    {
+        StopAnimation();
+        _shownItem = null;
+        _currentAnchor = null;
+        _currentScale = ClampTooltipScale(_preferredScale);
+
+        ApplyHiddenVisuals(true);
+    }
+
+    private void ApplyHiddenVisuals(bool clearContent)
+    {
         if (_canvasGroup != null)
         {
             _canvasGroup.alpha = 0f;
             _canvasGroup.interactable = false;
             _canvasGroup.blocksRaycasts = false;
+        }
+
+        if (_panel != null)
+        {
+            _panel.localScale = Vector3.one;
+        }
+
+        if (!clearContent)
+        {
+            return;
         }
 
         if (_icon != null)
@@ -121,8 +199,8 @@ public sealed class ItemTooltipView : MonoBehaviour
             _panel = transform as RectTransform;
         }
 
-        return _canvas != null && _panel != null && _canvasGroup != null &&
-            _icon != null && _titleText != null && _bodyText != null;
+        return _canvas != null && _tooltipConfig != null && _panel != null &&
+            _canvasGroup != null && _icon != null && _titleText != null && _bodyText != null;
     }
 
     private void PrepareText(TextMeshProUGUI text)
@@ -148,7 +226,6 @@ public sealed class ItemTooltipView : MonoBehaviour
 
         _panel.anchorMin = new Vector2(0f, 1f);
         _panel.anchorMax = new Vector2(0f, 1f);
-        _panel.pivot = new Vector2(0f, 1f);
         _panel.sizeDelta = new Vector2(width, height);
 
         RectTransform iconRect = _iconRect != null ? _iconRect : _icon.rectTransform;
@@ -175,9 +252,9 @@ public sealed class ItemTooltipView : MonoBehaviour
         return _panel.sizeDelta;
     }
 
-    private void ShowCanvasGroup()
+    private void PrepareVisibleCanvasGroup(float alpha)
     {
-        _canvasGroup.alpha = 1f;
+        _canvasGroup.alpha = Mathf.Clamp01(alpha);
         _canvasGroup.interactable = false;
         _canvasGroup.blocksRaycasts = false;
     }
@@ -196,19 +273,25 @@ public sealed class ItemTooltipView : MonoBehaviour
 
         Vector2 topLeft = RectTransformUtility.WorldToScreenPoint(canvasCamera, _anchorWorldCorners[_topLeftCornerIndex]);
         Vector2 topRight = RectTransformUtility.WorldToScreenPoint(canvasCamera, _anchorWorldCorners[_topRightCornerIndex]);
-        float scale = Mathf.Max(0.01f, _canvas.scaleFactor);
-        Vector2 pixelSize = tooltipSize * scale;
-        float offset = _anchorOffset * scale;
-        float edge = _edgePadding * scale;
+        float canvasScale = Mathf.Max(0.01f, _canvas.scaleFactor);
+        Vector2 pixelSize = tooltipSize * canvasScale * _currentScale;
+        float offset = _anchorOffset * canvasScale;
+        float edge = _edgePadding * canvasScale;
+        float anchorCenterX = (topLeft.x + topRight.x) * 0.5f;
+        bool showRight = anchorCenterX < Screen.width * 0.5f;
 
-        Vector2 rightCandidate = new Vector2(topRight.x + offset, topRight.y);
-        Vector2 leftCandidate = new Vector2(topLeft.x - offset - pixelSize.x, topLeft.y);
-        Vector2 selected = SelectCandidate(rightCandidate, leftCandidate, pixelSize, edge);
-        selected = ClampToScreen(selected, pixelSize, edge);
+        _panel.pivot = new Vector2(showRight ? 0f : 1f, 1f);
+
+        Vector2 pivotCandidate = showRight
+            ? new Vector2(topRight.x + offset, topRight.y)
+            : new Vector2(topLeft.x - offset, topLeft.y);
+        Vector2 panelTopLeft = PivotToTopLeft(pivotCandidate, pixelSize, showRight);
+        Vector2 clampedTopLeft = ClampToScreen(panelTopLeft, pixelSize, edge);
+        Vector2 selectedPivot = TopLeftToPivot(clampedTopLeft, pixelSize, showRight);
 
         if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
             canvasRect,
-            selected,
+            selectedPivot,
             canvasCamera,
             out Vector3 worldPoint))
         {
@@ -216,35 +299,14 @@ public sealed class ItemTooltipView : MonoBehaviour
         }
     }
 
-    private Vector2 SelectCandidate(Vector2 rightCandidate, Vector2 leftCandidate, Vector2 pixelSize, float edge)
+    private static Vector2 PivotToTopLeft(Vector2 pivotPoint, Vector2 pixelSize, bool showRight)
     {
-        if (FitsScreen(rightCandidate, pixelSize, edge))
-        {
-            return rightCandidate;
-        }
-
-        if (FitsScreen(leftCandidate, pixelSize, edge))
-        {
-            return leftCandidate;
-        }
-
-        bool rightFitsHorizontally = rightCandidate.x + pixelSize.x <= Screen.width - edge;
-        bool leftFitsHorizontally = leftCandidate.x >= edge;
-
-        if (!rightFitsHorizontally && leftFitsHorizontally)
-        {
-            return leftCandidate;
-        }
-
-        return rightCandidate;
+        return showRight ? pivotPoint : new Vector2(pivotPoint.x - pixelSize.x, pivotPoint.y);
     }
 
-    private static bool FitsScreen(Vector2 topLeft, Vector2 pixelSize, float edge)
+    private static Vector2 TopLeftToPivot(Vector2 topLeft, Vector2 pixelSize, bool showRight)
     {
-        return topLeft.x >= edge &&
-            topLeft.x + pixelSize.x <= Screen.width - edge &&
-            topLeft.y <= Screen.height - edge &&
-            topLeft.y - pixelSize.y >= edge;
+        return showRight ? topLeft : new Vector2(topLeft.x + pixelSize.x, topLeft.y);
     }
 
     private static Vector2 ClampToScreen(Vector2 topLeft, Vector2 pixelSize, float edge)
@@ -273,5 +335,108 @@ public sealed class ItemTooltipView : MonoBehaviour
         }
 
         return topLeft;
+    }
+
+    private void StartVisibilityAnimation(
+        float fromAlpha,
+        float toAlpha,
+        float fromScale,
+        float toScale,
+        bool clearContentOnComplete)
+    {
+        float duration = GetAnimationSeconds();
+
+        if (duration <= 0f)
+        {
+            PrepareVisibleCanvasGroup(toAlpha);
+            _panel.localScale = Vector3.one * toScale;
+
+            if (clearContentOnComplete)
+            {
+                ApplyHiddenVisuals(true);
+            }
+
+            return;
+        }
+
+        _animation = StartCoroutine(AnimateVisibility(
+            fromAlpha,
+            toAlpha,
+            fromScale,
+            toScale,
+            duration,
+            clearContentOnComplete));
+    }
+
+    private IEnumerator AnimateVisibility(
+        float fromAlpha,
+        float toAlpha,
+        float fromScale,
+        float toScale,
+        float duration,
+        bool clearContentOnComplete)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
+            float easedProgress = Mathf.SmoothStep(0f, 1f, progress);
+            PrepareVisibleCanvasGroup(Mathf.Lerp(fromAlpha, toAlpha, easedProgress));
+            _panel.localScale = Vector3.one * Mathf.Lerp(fromScale, toScale, easedProgress);
+            yield return null;
+        }
+
+        PrepareVisibleCanvasGroup(toAlpha);
+        _panel.localScale = Vector3.one * toScale;
+
+        if (clearContentOnComplete)
+        {
+            ApplyHiddenVisuals(true);
+        }
+
+        _animation = null;
+    }
+
+    private void StopAnimation()
+    {
+        if (_animation == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_animation);
+        _animation = null;
+    }
+
+    private float GetAnimationSeconds()
+    {
+        return _tooltipConfig != null ? _tooltipConfig.ShowHideSeconds : 0f;
+    }
+
+    private float GetCollapsedScale()
+    {
+        return _tooltipConfig != null ? _tooltipConfig.CollapsedScale : 0.85f;
+    }
+
+    private float GetScrollScaleStep()
+    {
+        return _tooltipConfig != null ? _tooltipConfig.ScrollScaleStep : 0.1f;
+    }
+
+    private float GetMinScale()
+    {
+        return _tooltipConfig != null ? _tooltipConfig.MinScale : 1f;
+    }
+
+    private float GetMaxScale()
+    {
+        return _tooltipConfig != null ? _tooltipConfig.MaxScale : 1f;
+    }
+
+    private float ClampTooltipScale(float scale)
+    {
+        return Mathf.Clamp(scale, GetMinScale(), GetMaxScale());
     }
 }

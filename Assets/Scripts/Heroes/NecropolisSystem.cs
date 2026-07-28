@@ -20,6 +20,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
     [Header("Config")]
     [SerializeField] private NecropolisConfig _config = null;
+    [SerializeField] private TooltipConfig _tooltipConfig = null;
     [SerializeField] private Camera _camera = null;
 
     [Header("Scene UI")]
@@ -290,7 +291,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         _createHeroButton.onClick.AddListener(CreateHero);
         ConfigurePrimaryStatUpgradeButtonVisuals();
         AddPrimaryStatUpgradeListeners();
-        _itemTooltip.Configure(_canvas, _config.StatsConfig);
+        _itemTooltip.Configure(_canvas, _config.StatsConfig, _tooltipConfig);
         ConfigureHeroItemSlots();
 
         CreateInitialDicePool();
@@ -323,6 +324,11 @@ public sealed class NecropolisSystem : MonoBehaviour
         if (_config.LevelUpConfig == null || !_config.LevelUpConfig.ValidateForRuntime())
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(NecropolisConfig)}.");
+        }
+
+        if (_tooltipConfig == null || !_tooltipConfig.ValidateForRuntime())
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(TooltipConfig)}.");
         }
 
         if (!_config.DiceConfig.ValidateForRuntime(_config))
