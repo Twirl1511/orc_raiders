@@ -32,6 +32,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _statusText = null;
     [SerializeField] private TextMeshProUGUI _heroInfoTitle = null;
     [SerializeField] private TextMeshProUGUI _heroInfoText = null;
+    [SerializeField] private CanvasGroup _heroInfoPanelCanvasGroup = null;
     [SerializeField] private Button _createHeroButton = null;
     [SerializeField] private ItemStorageSystem _itemStorage = null;
     [SerializeField] private ItemTooltipView _itemTooltip = null;
@@ -70,6 +71,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     private bool _initialized;
 
     public IReadOnlyList<HeroRuntimeData> Heroes => _heroes;
+    public HeroRuntimeData SelectedHero => _selectedHero;
 
     private void Start()
     {
@@ -137,6 +139,7 @@ public sealed class NecropolisSystem : MonoBehaviour
             return;
         }
 
+        bool clearSelection = _selectedHero == heroData && state == HeroActivityState.InRaid;
         heroData.SetState(state);
 
         if (state != HeroActivityState.InRaid)
@@ -144,7 +147,29 @@ public sealed class NecropolisSystem : MonoBehaviour
             heroData.SetMapPosition(GetDefaultHeroPositionForState(heroData, state));
         }
 
+        if (clearSelection)
+        {
+            if (state != HeroActivityState.Resting)
+            {
+                _restHealTimers.Remove(heroData);
+            }
+
+            ClearHeroSelection();
+            return;
+        }
+
         RefreshHeroAfterStateChange(heroData);
+    }
+
+    public void SelectHeroFromRaid(HeroRuntimeData heroData)
+    {
+        if (!_initialized || heroData == null || !_heroes.Contains(heroData) || heroData.State != HeroActivityState.InRaid)
+        {
+            return;
+        }
+
+        ShowHeroInfo(heroData);
+        _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
     }
 
     public void AddExperienceToHero(HeroRuntimeData heroData, int amount)
@@ -166,7 +191,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         if (_selectedHero == heroData)
         {
-            ShowHeroInfo(heroData);
+            RefreshHeroInfoText(heroData);
         }
     }
 
@@ -197,6 +222,11 @@ public sealed class NecropolisSystem : MonoBehaviour
             return false;
         }
 
+        if (!CanEditHeroPanel(heroData))
+        {
+            return false;
+        }
+
         if (!itemStorage.TryEquipItemToHero(item, heroData, slotIndex))
         {
             return false;
@@ -211,6 +241,11 @@ public sealed class NecropolisSystem : MonoBehaviour
     public bool TryUnequipItemToStorage(HeroRuntimeData heroData, int slotIndex)
     {
         if (!_initialized || heroData == null || _itemStorage == null || !_heroes.Contains(heroData))
+        {
+            return false;
+        }
+
+        if (!CanEditHeroPanel(heroData))
         {
             return false;
         }
@@ -348,7 +383,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         if (_canvas == null || _availableDiceRoot == null || _selectedDiceRoot == null || _diceButtonTemplate == null ||
             _selectedDiceLabel == null || _statusText == null || _heroInfoTitle == null || _heroInfoText == null ||
-            _createHeroButton == null)
+            _heroInfoPanelCanvasGroup == null || _createHeroButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene UI references.");
         }
@@ -504,10 +539,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     private void ResetInfoText()
     {
         _statusText.text = $"Выбери минимум {_config.RequiredDiceCount} костей и нажми кнопку.";
-        _heroInfoTitle.text = "Герой";
-        _heroInfoText.text = "Созданные герои появятся рядом с Некрополем.\nКлик по герою покажет статы.";
-        RefreshPrimaryStatUpgradeButtons(null);
-        RefreshHeroItemSlots(null);
+        ClearHeroSelection();
     }
 
     private void RefreshUi()
@@ -814,10 +846,28 @@ public sealed class NecropolisSystem : MonoBehaviour
 
     private void ShowHeroInfo(HeroRuntimeData heroData)
     {
+        if (heroData == null)
+        {
+            ClearHeroSelection();
+            return;
+        }
+
         _selectedHero = heroData;
+        SetHeroInfoPanelVisible(true);
         RefreshHeroVisualStates();
         RefreshHeroItemSlots(heroData);
         _heroInfoTitle.text = heroData.Name;
+        RefreshHeroInfoText(heroData);
+        _raidSystem?.RefreshHeroSelectionVisuals();
+    }
+
+    private void RefreshHeroInfoText(HeroRuntimeData heroData)
+    {
+        if (heroData == null || _heroInfoText == null)
+        {
+            return;
+        }
+
         string freeStatsLine = heroData.FreePrimaryStatPoints > 0
             ? $"Свободные статы: {heroData.FreePrimaryStatPoints}\n"
             : "";
@@ -833,6 +883,40 @@ public sealed class NecropolisSystem : MonoBehaviour
         RefreshPrimaryStatUpgradeButtons(heroData);
     }
 
+    private void ClearHeroSelection()
+    {
+        _selectedHero = null;
+        _itemTooltip?.Hide();
+        SetHeroInfoPanelVisible(false);
+
+        if (_heroInfoTitle != null)
+        {
+            _heroInfoTitle.text = "";
+        }
+
+        if (_heroInfoText != null)
+        {
+            _heroInfoText.text = "";
+        }
+
+        RefreshPrimaryStatUpgradeButtons(null);
+        RefreshHeroItemSlots(null);
+        RefreshHeroVisualStates();
+        _raidSystem?.RefreshHeroSelectionVisuals();
+    }
+
+    private void SetHeroInfoPanelVisible(bool visible)
+    {
+        if (_heroInfoPanelCanvasGroup == null)
+        {
+            return;
+        }
+
+        _heroInfoPanelCanvasGroup.alpha = visible ? 1f : 0f;
+        _heroInfoPanelCanvasGroup.interactable = visible;
+        _heroInfoPanelCanvasGroup.blocksRaycasts = visible;
+    }
+
     private void RefreshHeroItemSlots(HeroRuntimeData heroData)
     {
         if (_heroItemSlots == null)
@@ -844,7 +928,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         {
             if (_heroItemSlots[i] != null)
             {
-                _heroItemSlots[i].SetHero(heroData);
+                _heroItemSlots[i].SetHero(heroData, CanEditHeroPanel(heroData));
             }
         }
     }
@@ -984,7 +1068,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         bool visible = heroData != null && heroData.FreePrimaryStatPoints > 0;
         button.gameObject.SetActive(visible);
-        button.interactable = visible && heroData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
+        button.interactable = visible && CanEditHeroPanel(heroData) && heroData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
     }
 
     private void SpendEndurancePoint()
@@ -1009,7 +1093,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
     private void SpendPrimaryStatPoint(PrimaryStatType statType)
     {
-        if (_selectedHero == null || !_selectedHero.TrySpendFreePrimaryStatPoint(statType, _config.StatsConfig))
+        if (!CanEditHeroPanel(_selectedHero) || !_selectedHero.TrySpendFreePrimaryStatPoint(statType, _config.StatsConfig))
         {
             return;
         }
@@ -1018,6 +1102,12 @@ public sealed class NecropolisSystem : MonoBehaviour
         RefreshHeroHealthBar(_selectedHero);
         _raidSystem.RefreshHeroCombatStats(_selectedHero);
         ShowHeroInfo(_selectedHero);
+    }
+
+    private static bool CanEditHeroPanel(HeroRuntimeData heroData)
+    {
+        return heroData != null &&
+            (heroData.State == HeroActivityState.OnBase || heroData.State == HeroActivityState.Resting);
     }
 
     private void UpdateRestingHeroes(float deltaTime)

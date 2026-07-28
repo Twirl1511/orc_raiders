@@ -248,6 +248,7 @@ public sealed class RaidSystem : MonoBehaviour
 
         RaidRuntimeData raid = new RaidRuntimeData(_nextRaidId, panel, layoutSlot, GetRandomHeroSlotCount());
         panel.CloseRequested += () => RemoveRaid(raid);
+        panel.HeroClicked += heroIndex => HandleRaidHeroClicked(raid, heroIndex);
 
         _nextRaidId++;
         _raids.Add(raid);
@@ -287,6 +288,35 @@ public sealed class RaidSystem : MonoBehaviour
         raid.Heroes.Add(raidHero);
         RefreshRaidHeroCombatStats(raidHero);
         _necropolisSystem.SetHeroState(heroData, HeroActivityState.InRaid);
+    }
+
+    public void RefreshHeroSelectionVisuals()
+    {
+        if (!_initialized)
+        {
+            return;
+        }
+
+        HeroRuntimeData selectedHero = _necropolisSystem != null ? _necropolisSystem.SelectedHero : null;
+
+        for (int i = 0; i < _raids.Count; i++)
+        {
+            if (_raids[i].Panel != null)
+            {
+                _raids[i].Panel.SetSelectedHero(selectedHero);
+            }
+        }
+    }
+
+    private void HandleRaidHeroClicked(RaidRuntimeData raid, int heroIndex)
+    {
+        if (!_initialized || raid == null || heroIndex < 0 || heroIndex >= raid.Heroes.Count)
+        {
+            return;
+        }
+
+        _necropolisSystem.SelectHeroFromRaid(raid.Heroes[heroIndex].Hero);
+        RefreshHeroSelectionVisuals();
     }
 
     private bool ContainsHero(RaidRuntimeData raid, HeroRuntimeData heroData)
@@ -915,7 +945,10 @@ public sealed class RaidSystem : MonoBehaviour
         {
             RaidHeroRuntimeData hero = raid.Heroes[i];
             float attackProgress = showAttackProgress && hero.Hp > 0f ? hero.AttackProgress : 0f;
-            _heroViewData.Add(new RaidHeroViewData(hero.Hero.Name, hero.Hp, hero.MaxHp, attackProgress));
+            bool isSelected = _necropolisSystem != null &&
+                _necropolisSystem.SelectedHero == hero.Hero &&
+                hero.Hero.State == HeroActivityState.InRaid;
+            _heroViewData.Add(new RaidHeroViewData(hero.Hero, hero.Hero.Name, hero.Hp, hero.MaxHp, attackProgress, isSelected));
         }
     }
 

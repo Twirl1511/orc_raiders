@@ -200,6 +200,7 @@ MonoBehaviour:
   _statusText: {fileID: 183676722}
   _heroInfoTitle: {fileID: 1277398314}
   _heroInfoText: {fileID: 861063189}
+  _heroInfoPanelCanvasGroup: {fileID: 1395624773}
   _createHeroButton: {fileID: 669745059}
   _itemStorage: {fileID: 1901000006}
   _itemTooltip: {fileID: 2200000005}
@@ -3031,6 +3032,7 @@ GameObject:
   - component: {fileID: 1395624770}
   - component: {fileID: 1395624769}
   - component: {fileID: 1395624772}
+  - component: {fileID: 1395624773}
   m_Layer: 0
   m_Name: Hero Info Panel
   m_TagString: Untagged
@@ -3140,6 +3142,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DraggableUiPanel
   _dragTarget: {fileID: 1395624768}
   _blockDragFromSelectables: 1
+--- !u!225 &1395624773
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1395624767}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &2001040000
 GameObject:
   m_ObjectHideFlags: 0

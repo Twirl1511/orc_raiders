@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public sealed class RaidPanelView : MonoBehaviour
@@ -34,6 +35,7 @@ public sealed class RaidPanelView : MonoBehaviour
 
     public RectTransform Root => _root;
     public event Action CloseRequested;
+    public event Action<int> HeroClicked;
 
     private void Awake()
     {
@@ -224,6 +226,19 @@ public sealed class RaidPanelView : MonoBehaviour
         yield return _enemyRows[enemyIndex].ShakeHpBar();
     }
 
+    public void SetSelectedHero(HeroRuntimeData selectedHero)
+    {
+        bool canShowSelection = selectedHero != null && selectedHero.State == HeroActivityState.InRaid;
+
+        for (int i = 0; i < _heroRows.Count; i++)
+        {
+            if (_heroRows[i].gameObject.activeSelf)
+            {
+                _heroRows[i].SetSelected(canShowSelection && _heroRows[i].Hero == selectedHero);
+            }
+        }
+    }
+
     private void BuildIfNeeded()
     {
         if (_built)
@@ -276,7 +291,7 @@ public sealed class RaidPanelView : MonoBehaviour
         {
             RaidHeroRowView row = GetHeroRow(i);
             row.gameObject.SetActive(true);
-            row.SetData(heroes[i]);
+            row.SetData(heroes[i], i, HandleHeroRowClicked);
         }
 
         for (int i = heroes.Count; i < _heroRows.Count; i++)
@@ -501,6 +516,11 @@ public sealed class RaidPanelView : MonoBehaviour
         CloseRequested?.Invoke();
     }
 
+    private void HandleHeroRowClicked(int heroIndex)
+    {
+        HeroClicked?.Invoke(heroIndex);
+    }
+
     private static void SetBarFill(Image fillImage, float value)
     {
         RectTransform rectTransform = fillImage.rectTransform;
@@ -526,32 +546,45 @@ public sealed class RaidPanelView : MonoBehaviour
 
 public readonly struct RaidHeroViewData
 {
-    public RaidHeroViewData(string name, float hp, float maxHp, float attackProgress)
+    public RaidHeroViewData(HeroRuntimeData hero, string name, float hp, float maxHp, float attackProgress, bool isSelected)
     {
+        Hero = hero;
         Name = name;
         Hp = hp;
         MaxHp = maxHp;
         AttackProgress = attackProgress;
+        IsSelected = isSelected;
     }
 
+    public HeroRuntimeData Hero { get; }
     public string Name { get; }
     public float Hp { get; }
     public float MaxHp { get; }
     public float AttackProgress { get; }
+    public bool IsSelected { get; }
 }
 
-public sealed class RaidHeroRowView : MonoBehaviour
+public sealed class RaidHeroRowView : MonoBehaviour, IPointerClickHandler
 {
     private const float _rowWidth = 175f;
+    private const float _rowHeight = 46f;
+    private const float _selectionBorderThickness = 2f;
+    private static readonly Color _selectionBorderColor = new Color(1f, 0.84f, 0.12f, 1f);
 
     private TextMeshProUGUI _nameText;
     private RectTransform _hpBarRoot;
     private Image _hpFill;
     private Image _attackFill;
+    private readonly List<Image> _selectionBorders = new List<Image>();
+    private HeroRuntimeData _hero;
+    private Action<int> _clicked;
+    private int _index;
+
+    public HeroRuntimeData Hero => _hero;
 
     public static RaidHeroRowView Create(RectTransform parent, int index)
     {
-        GameObject rowObject = new GameObject($"Hero Row {index + 1}", typeof(RectTransform), typeof(RaidHeroRowView));
+        GameObject rowObject = new GameObject($"Hero Row {index + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RaidHeroRowView));
         rowObject.transform.SetParent(parent, false);
 
         RectTransform root = (RectTransform)rowObject.transform;
@@ -559,18 +592,40 @@ public sealed class RaidHeroRowView : MonoBehaviour
         root.anchorMax = new Vector2(0f, 1f);
         root.pivot = new Vector2(0f, 1f);
         root.anchoredPosition = new Vector2(0f, -index * 52f);
-        root.sizeDelta = new Vector2(_rowWidth, 46f);
+        root.sizeDelta = new Vector2(_rowWidth, _rowHeight);
 
         RaidHeroRowView row = rowObject.GetComponent<RaidHeroRowView>();
         row.Build(root);
         return row;
     }
 
-    public void SetData(RaidHeroViewData data)
+    public void SetData(RaidHeroViewData data, int index, Action<int> clicked)
     {
+        _hero = data.Hero;
+        _index = index;
+        _clicked = clicked;
         _nameText.text = $"{data.Name}  {Mathf.CeilToInt(data.Hp)}/{Mathf.CeilToInt(data.MaxHp)} HP";
         SetBarFill(_hpFill, GetRatio(data.Hp, data.MaxHp));
         SetBarFill(_attackFill, data.AttackProgress);
+        SetSelected(data.IsSelected);
+    }
+
+    public void SetSelected(bool selected)
+    {
+        for (int i = 0; i < _selectionBorders.Count; i++)
+        {
+            _selectionBorders[i].gameObject.SetActive(selected);
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
+        {
+            return;
+        }
+
+        _clicked?.Invoke(_index);
     }
 
     public IEnumerator ShakeHpBar()
@@ -593,9 +648,35 @@ public sealed class RaidHeroRowView : MonoBehaviour
 
     private void Build(RectTransform root)
     {
+        Image clickArea = root.GetComponent<Image>();
+
+        if (clickArea != null)
+        {
+            clickArea.color = new Color(1f, 1f, 1f, 0f);
+            clickArea.raycastTarget = true;
+        }
+
         _nameText = CreateText(root, "Name", new Vector2(0f, 0f), new Vector2(_rowWidth, 20f), 13f);
         _hpFill = CreateBar(root, "HP", new Vector2(0f, -24f), new Vector2(_rowWidth, 14f), new Color(0.17f, 0.2f, 0.22f, 1f), new Color(0.45f, 0.9f, 0.45f, 1f), out _hpBarRoot);
         _attackFill = CreateBar(root, "Attack", new Vector2(0f, -42f), new Vector2(_rowWidth, 6f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f));
+        CreateSelectionBorder(root, "Selection Top", Vector2.zero, new Vector2(_rowWidth, _selectionBorderThickness));
+        CreateSelectionBorder(root, "Selection Bottom", new Vector2(0f, -_rowHeight + _selectionBorderThickness), new Vector2(_rowWidth, _selectionBorderThickness));
+        CreateSelectionBorder(root, "Selection Left", Vector2.zero, new Vector2(_selectionBorderThickness, _rowHeight));
+        CreateSelectionBorder(root, "Selection Right", new Vector2(_rowWidth - _selectionBorderThickness, 0f), new Vector2(_selectionBorderThickness, _rowHeight));
+        SetSelected(false);
+    }
+
+    private void CreateSelectionBorder(RectTransform parent, string name, Vector2 anchoredPosition, Vector2 size)
+    {
+        GameObject borderObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        borderObject.transform.SetParent(parent, false);
+        SetupRect(borderObject, anchoredPosition, size);
+
+        Image border = borderObject.GetComponent<Image>();
+        border.color = _selectionBorderColor;
+        border.raycastTarget = false;
+        border.gameObject.SetActive(false);
+        _selectionBorders.Add(border);
     }
 
     private TextMeshProUGUI CreateText(RectTransform parent, string name, Vector2 anchoredPosition, Vector2 size, float fontSize)

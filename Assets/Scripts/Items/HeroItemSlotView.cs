@@ -13,6 +13,7 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
     private ItemTooltipView _itemTooltip;
     private HeroRuntimeData _hero;
     private int _slotIndex;
+    private bool _allowInteraction = true;
 
     public void Configure(NecropolisSystem owner, int slotIndex, ItemTooltipView itemTooltip)
     {
@@ -22,21 +23,27 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
         Refresh();
     }
 
-    public void SetHero(HeroRuntimeData hero)
+    public void SetHero(HeroRuntimeData hero, bool allowInteraction)
     {
         _itemTooltip?.Hide();
         _hero = hero;
+        _allowInteraction = allowInteraction;
         Refresh();
     }
 
     public bool TryAcceptItem(ItemRuntimeData item, ItemStorageSystem itemStorage)
     {
-        return _owner != null && _hero != null &&
+        return _allowInteraction && _owner != null && _hero != null &&
             _owner.TryEquipItemFromStorage(_hero, _slotIndex, item, itemStorage);
     }
 
     public void OnDrop(PointerEventData eventData)
     {
+        if (!_allowInteraction)
+        {
+            return;
+        }
+
         ItemButtonView itemButton = eventData != null && eventData.pointerDrag != null
             ? eventData.pointerDrag.GetComponent<ItemButtonView>()
             : null;
@@ -46,7 +53,7 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (eventData == null || eventData.button != PointerEventData.InputButton.Right)
+        if (!_allowInteraction || eventData == null || eventData.button != PointerEventData.InputButton.Right)
         {
             return;
         }
@@ -111,9 +118,18 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
         if (_background != null)
         {
             _background.raycastTarget = true;
-            _background.color = definition != null
-                ? new Color(0.88f, 0.9f, 0.86f, 1f)
-                : new Color(0.16f, 0.18f, 0.2f, 1f);
+            if (definition != null)
+            {
+                _background.color = _allowInteraction
+                    ? new Color(0.88f, 0.9f, 0.86f, 1f)
+                    : new Color(0.48f, 0.49f, 0.46f, 1f);
+            }
+            else
+            {
+                _background.color = _allowInteraction
+                    ? new Color(0.16f, 0.18f, 0.2f, 1f)
+                    : new Color(0.1f, 0.11f, 0.12f, 1f);
+            }
         }
     }
 }
