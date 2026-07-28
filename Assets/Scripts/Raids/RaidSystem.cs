@@ -1028,7 +1028,7 @@ public sealed class RaidSystem : MonoBehaviour
 
         float currentHp = raidHero.Hp > 0f ? raidHero.Hp : raidHero.Hero.CurrentHp;
         raidHero.Hp = Mathf.Clamp(currentHp, 0f, raidHero.MaxHp);
-        raidHero.AttackInterval = Mathf.Max(0.01f, raidHero.SecondaryStats.AttackSpeed);
+        raidHero.AttackInterval = Mathf.Max(0.01f, raidHero.SecondaryStats.AttackInterval);
         raidHero.Damage = Mathf.Max(1f, raidHero.SecondaryStats.MeleeDamage);
         raidHero.Hero.SetCurrentHp(raidHero.Hp);
     }

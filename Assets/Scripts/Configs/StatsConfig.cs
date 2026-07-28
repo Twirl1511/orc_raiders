@@ -58,7 +58,7 @@ public sealed class StatsConfig : ScriptableObject
 
             if (definition != null && definition.StatType == statType)
             {
-                return statType == SecondaryStatType.AttackSpeed
+                return statType == SecondaryStatType.AttackInterval
                     ? _attackIntervalSeconds
                     : definition.MinimumValue;
             }
@@ -77,7 +77,7 @@ public sealed class StatsConfig : ScriptableObject
 
             if (definition != null && definition.StatType != SecondaryStatType.None)
             {
-                float minimumValue = definition.StatType == SecondaryStatType.AttackSpeed
+                float minimumValue = definition.StatType == SecondaryStatType.AttackInterval
                     ? _attackIntervalSeconds
                     : definition.MinimumValue;
                 snapshot.Add(definition.StatType, minimumValue);
@@ -249,8 +249,8 @@ public sealed class StatsConfig : ScriptableObject
     {
         switch (statType)
         {
-            case SecondaryStatType.AttackSpeed:
-                return "Скорость атаки";
+            case SecondaryStatType.AttackInterval:
+                return "Интервал атаки";
             case SecondaryStatType.MeleeDamage:
                 return "Урон в ближнем бою";
             case SecondaryStatType.MaxHp:
@@ -281,7 +281,7 @@ public sealed class StatsConfig : ScriptableObject
     {
         switch (definition.StatType)
         {
-            case SecondaryStatType.AttackSpeed:
+            case SecondaryStatType.AttackInterval:
                 return $"{definition.DisplayName}: {FormatValue(Mathf.Max(0.01f, value), " сек.")}";
             case SecondaryStatType.Armor:
                 return FormatArmorStatLine(value, definition.DisplayName, definition.ValueSuffix);
@@ -315,7 +315,7 @@ public sealed class StatsConfig : ScriptableObject
 public enum SecondaryStatType
 {
     None = 0,
-    AttackSpeed = 1,
+    AttackInterval = 1,
     MeleeDamage = 2,
     MaxHp = 3,
     RangedDamage = 4,
@@ -389,7 +389,7 @@ public sealed class StatScalingRule
 [Serializable]
 public struct SecondaryStatsSnapshot
 {
-    [SerializeField] private float _attackSpeed;
+    [SerializeField] private float _attackInterval;
     [SerializeField] private float _meleeDamage;
     [SerializeField] private float _maxHp;
     [SerializeField] private float _rangedDamage;
@@ -397,7 +397,7 @@ public struct SecondaryStatsSnapshot
     [SerializeField] private float _dodgeChance;
     [SerializeField] private float _armor;
 
-    public float AttackSpeed => _attackSpeed;
+    public float AttackInterval => _attackInterval;
     public float MeleeDamage => _meleeDamage;
     public float MaxHp => _maxHp;
     public float RangedDamage => _rangedDamage;
@@ -409,8 +409,8 @@ public struct SecondaryStatsSnapshot
     {
         switch (statType)
         {
-            case SecondaryStatType.AttackSpeed:
-                _attackSpeed = Mathf.Max(0.01f, _attackSpeed + value);
+            case SecondaryStatType.AttackInterval:
+                _attackInterval = Mathf.Max(0.01f, _attackInterval + value);
                 break;
             case SecondaryStatType.MeleeDamage:
                 _meleeDamage += value;
@@ -437,8 +437,8 @@ public struct SecondaryStatsSnapshot
     {
         switch (statType)
         {
-            case SecondaryStatType.AttackSpeed:
-                return _attackSpeed;
+            case SecondaryStatType.AttackInterval:
+                return _attackInterval;
             case SecondaryStatType.MeleeDamage:
                 return _meleeDamage;
             case SecondaryStatType.MaxHp:
