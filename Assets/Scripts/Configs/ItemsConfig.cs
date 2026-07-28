@@ -100,12 +100,14 @@ public sealed class ItemDefinition
 {
     [SerializeField] private string _id = "item_id";
     [SerializeField] private string _displayName = "Item";
+    [SerializeField, TextArea] private string _description = "";
     [SerializeField] private ItemGroup _group = ItemGroup.Weapon;
     [SerializeField] private Sprite _icon = null;
     [SerializeField] private List<ItemStatModifier> _statModifiers = new List<ItemStatModifier>();
 
     public string Id => string.IsNullOrWhiteSpace(_id) ? "" : _id.Trim();
     public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? Id : _displayName;
+    public string Description => _description;
     public ItemGroup Group => _group;
     public Sprite Icon => _icon;
     public IReadOnlyList<ItemStatModifier> StatModifiers => _statModifiers;

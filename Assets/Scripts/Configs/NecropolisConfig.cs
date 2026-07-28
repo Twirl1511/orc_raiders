@@ -75,6 +75,17 @@ public sealed class PrimaryStats
     public int Agility => _agility;
     public int Intelligence => _intelligence;
 
+    public PrimaryStats Copy()
+    {
+        return new PrimaryStats
+        {
+            _endurance = _endurance,
+            _strength = _strength,
+            _agility = _agility,
+            _intelligence = _intelligence
+        };
+    }
+
     public void SetToMinimums(StatsConfig statsConfig)
     {
         if (statsConfig == null)
@@ -128,6 +139,12 @@ public sealed class PrimaryStats
         Apply(statType, 1);
         Clamp(statsConfig);
         return GetValue(statType) > previousValue;
+    }
+
+    public void ApplyItemModifier(PrimaryStatType statType, int value, StatsConfig statsConfig)
+    {
+        Apply(statType, value);
+        Clamp(statsConfig);
     }
 
     private void Apply(PrimaryStatType statType, int value)

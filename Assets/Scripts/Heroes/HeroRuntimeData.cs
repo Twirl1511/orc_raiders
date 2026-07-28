@@ -10,7 +10,10 @@ public enum HeroActivityState
 
 public sealed class HeroRuntimeData
 {
+    public const int EquipmentSlotCount = 3;
+
     private readonly List<string> _rollTexts;
+    private readonly ItemRuntimeData[] _equippedItems = new ItemRuntimeData[EquipmentSlotCount];
 
     public HeroRuntimeData(string name, PrimaryStats stats, List<string> rollTexts, float maxHp)
     {
@@ -75,6 +78,105 @@ public sealed class HeroRuntimeData
         }
 
         SetCurrentHp(CurrentHp + amount);
+    }
+
+    public ItemRuntimeData GetEquippedItem(int slotIndex)
+    {
+        return IsEquipmentSlotIndexValid(slotIndex) ? _equippedItems[slotIndex] : null;
+    }
+
+    public bool TryEquipItem(int slotIndex, ItemRuntimeData item, out ItemRuntimeData replacedItem)
+    {
+        replacedItem = null;
+
+        if (!IsEquipmentSlotIndexValid(slotIndex) || item == null)
+        {
+            return false;
+        }
+
+        replacedItem = _equippedItems[slotIndex];
+        _equippedItems[slotIndex] = item;
+        return true;
+    }
+
+    public bool TryUnequipItem(int slotIndex, out ItemRuntimeData item)
+    {
+        item = null;
+
+        if (!IsEquipmentSlotIndexValid(slotIndex) || _equippedItems[slotIndex] == null)
+        {
+            return false;
+        }
+
+        item = _equippedItems[slotIndex];
+        _equippedItems[slotIndex] = null;
+        return true;
+    }
+
+    public PrimaryStats GetEffectivePrimaryStats(StatsConfig statsConfig)
+    {
+        PrimaryStats effectiveStats = Stats.Copy();
+
+        for (int i = 0; i < _equippedItems.Length; i++)
+        {
+            ItemDefinition item = _equippedItems[i] != null ? _equippedItems[i].Definition : null;
+
+            if (item == null)
+            {
+                continue;
+            }
+
+            IReadOnlyList<ItemStatModifier> modifiers = item.StatModifiers;
+
+            for (int modifierIndex = 0; modifierIndex < modifiers.Count; modifierIndex++)
+            {
+                ItemStatModifier modifier = modifiers[modifierIndex];
+
+                if (modifier != null && modifier.Target == ItemStatTarget.Primary)
+                {
+                    effectiveStats.ApplyItemModifier(
+                        modifier.PrimaryStat,
+                        Mathf.RoundToInt(modifier.Value),
+                        statsConfig);
+                }
+            }
+        }
+
+        return effectiveStats;
+    }
+
+    public SecondaryStatsSnapshot GetEffectiveSecondaryStats(StatsConfig statsConfig)
+    {
+        if (statsConfig == null)
+        {
+            return default;
+        }
+
+        SecondaryStatsSnapshot snapshot = statsConfig.CalculateSecondaryStats(GetEffectivePrimaryStats(statsConfig));
+
+        for (int i = 0; i < _equippedItems.Length; i++)
+        {
+            ItemDefinition item = _equippedItems[i] != null ? _equippedItems[i].Definition : null;
+
+            if (item == null)
+            {
+                continue;
+            }
+
+            IReadOnlyList<ItemStatModifier> modifiers = item.StatModifiers;
+
+            for (int modifierIndex = 0; modifierIndex < modifiers.Count; modifierIndex++)
+            {
+                ItemStatModifier modifier = modifiers[modifierIndex];
+
+                if (modifier != null && modifier.Target == ItemStatTarget.Secondary)
+                {
+                    snapshot.Add(modifier.SecondaryStat, modifier.Value);
+                }
+            }
+        }
+
+        return snapshot;
     }
 
     public void AddExperience(int amount, LevelUpConfig levelUpConfig, StatsConfig statsConfig)
@@ -149,5 +251,10 @@ public sealed class HeroRuntimeData
             default:
                 return State.ToString();
         }
+    }
+
+    private static bool IsEquipmentSlotIndexValid(int slotIndex)
+    {
+        return slotIndex >= 0 && slotIndex < EquipmentSlotCount;
     }
 }

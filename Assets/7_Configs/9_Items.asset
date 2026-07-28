@@ -15,6 +15,7 @@ MonoBehaviour:
   _items:
   - _id: rusty_sword
     _displayName: Rusty Sword
+    _description: Temporary aggressive weapon for checking item stats and attack timing.
     _group: 1
     _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
     _statModifiers:
@@ -32,6 +33,7 @@ MonoBehaviour:
       _value: -0.08
   - _id: wooden_shield
     _displayName: Wooden Shield
+    _description: Temporary defensive armor item with a small agility penalty.
     _group: 2
     _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
     _statModifiers:
@@ -53,6 +55,7 @@ MonoBehaviour:
       _value: 0.07
   - _id: mail_chest
     _displayName: Mail chest
+    _description: Simple test chest armor with reliable protection and a mobility penalty.
     _group: 2
     _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
     _statModifiers:
@@ -68,3 +71,203 @@ MonoBehaviour:
       _primaryStat: 3
       _secondaryStat: 0
       _value: -1
+  - _id: iron_axe
+    _displayName: Iron Axe
+    _description: Heavy test weapon with strong melee damage, but slower attacks.
+    _group: 1
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 2
+      _secondaryStat: 0
+      _value: 3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: 6
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: 0.12
+  - _id: bone_dagger
+    _displayName: Bone Dagger
+    _description: Fast test weapon for agile heroes.
+    _group: 1
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 3
+      _secondaryStat: 0
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: -0.15
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 6
+      _value: 2
+  - _id: war_spear
+    _displayName: War Spear
+    _description: Balanced reach weapon with mixed melee and ranged pressure.
+    _group: 1
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 2
+      _secondaryStat: 0
+      _value: 1
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: 5
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 4
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: -0.03
+  - _id: hunter_bow
+    _displayName: Hunter Bow
+    _description: Ranged test weapon with high agility scaling feel.
+    _group: 1
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 3
+      _secondaryStat: 0
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 4
+      _value: 7
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: -0.05
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: -1
+  - _id: ritual_staff
+    _displayName: Ritual Staff
+    _description: Utility weapon for testing intelligence and loot bonuses.
+    _group: 1
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 4
+      _secondaryStat: 0
+      _value: 3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 4
+      _value: 4
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 5
+      _value: 3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: -2
+  - _id: fur_helm
+    _displayName: Fur Helm
+    _description: Light defensive test armor with extra health.
+    _group: 2
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 1
+      _secondaryStat: 0
+      _value: 1
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 3
+      _value: 12
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 7
+      _value: 2
+  - _id: iron_helmet
+    _displayName: Iron Helmet
+    _description: Durable armor piece with a small attack timing penalty.
+    _group: 2
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 1
+      _secondaryStat: 0
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 7
+      _value: 4
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: 0.04
+  - _id: leather_boots
+    _displayName: Leather Boots
+    _description: Mobility armor for testing dodge-heavy item builds.
+    _group: 2
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 3
+      _secondaryStat: 0
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 6
+      _value: 5
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 7
+      _value: 1
+  - _id: bone_gauntlets
+    _displayName: Bone Gauntlets
+    _description: Offensive armor piece with strength and melee damage.
+    _group: 2
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 2
+      _secondaryStat: 0
+      _value: 2
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 2
+      _value: 3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 7
+      _value: 1
+  - _id: tower_shield
+    _displayName: Tower Shield
+    _description: Very defensive armor with clear speed and dodge drawbacks.
+    _group: 2
+    _icon: {fileID: 21300000, guid: 0001fa55785c48f1ac2de7bebf89368e, type: 3}
+    _statModifiers:
+    - _target: 1
+      _primaryStat: 1
+      _secondaryStat: 0
+      _value: 3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 7
+      _value: 9
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 6
+      _value: -3
+    - _target: 2
+      _primaryStat: 0
+      _secondaryStat: 1
+      _value: 0.16

@@ -162,7 +162,11 @@ public sealed class StatsConfig : ScriptableObject
 
     public string GetSecondaryStatsSummary(PrimaryStats primaryStats)
     {
-        SecondaryStatsSnapshot snapshot = CalculateSecondaryStats(primaryStats);
+        return GetSecondaryStatsSummary(CalculateSecondaryStats(primaryStats));
+    }
+
+    public string GetSecondaryStatsSummary(SecondaryStatsSnapshot snapshot)
+    {
         List<string> lines = new List<string>();
 
         for (int i = 0; i < _secondaryStats.Count; i++)

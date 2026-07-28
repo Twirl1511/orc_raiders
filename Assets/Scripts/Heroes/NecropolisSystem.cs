@@ -32,6 +32,8 @@ public sealed class NecropolisSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _heroInfoTitle = null;
     [SerializeField] private TextMeshProUGUI _heroInfoText = null;
     [SerializeField] private Button _createHeroButton = null;
+    [SerializeField] private ItemStorageSystem _itemStorage = null;
+    [SerializeField] private HeroItemSlotView[] _heroItemSlots = new HeroItemSlotView[HeroRuntimeData.EquipmentSlotCount];
 
     [Header("Primary Stat Upgrade Buttons")]
     [SerializeField] private Button _enduranceUpgradeButton = null;
@@ -151,7 +153,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         int levelBefore = heroData.Level;
         heroData.AddExperience(amount, _config.LevelUpConfig, _config.StatsConfig);
-        heroData.SetMaxHp(CalculateHeroMaxHp(heroData.Stats), false);
+        heroData.SetMaxHp(CalculateHeroMaxHp(heroData), false);
         if (heroData.Level != levelBefore)
         {
             RefreshHeroMapVisualSize(heroData);
@@ -181,6 +183,51 @@ public sealed class NecropolisSystem : MonoBehaviour
         return rewardDice;
     }
 
+    public bool TryEquipItemFromStorage(
+        HeroRuntimeData heroData,
+        int slotIndex,
+        ItemRuntimeData item,
+        ItemStorageSystem itemStorage)
+    {
+        if (!_initialized || heroData == null || item == null || itemStorage == null || !_heroes.Contains(heroData))
+        {
+            return false;
+        }
+
+        if (!itemStorage.TryEquipItemToHero(item, heroData, slotIndex))
+        {
+            return false;
+        }
+
+        RefreshHeroAfterEquipmentChange(heroData);
+
+        _statusText.text = $"{heroData.Name}: экипирован {item.DisplayName}.";
+        return true;
+    }
+
+    public bool TryUnequipItemToStorage(HeroRuntimeData heroData, int slotIndex)
+    {
+        if (!_initialized || heroData == null || _itemStorage == null || !_heroes.Contains(heroData))
+        {
+            return false;
+        }
+
+        if (!heroData.TryUnequipItem(slotIndex, out ItemRuntimeData item))
+        {
+            return false;
+        }
+
+        if (!_itemStorage.AddItem(item))
+        {
+            heroData.TryEquipItem(slotIndex, item, out _);
+            return false;
+        }
+
+        RefreshHeroAfterEquipmentChange(heroData);
+        _statusText.text = $"{heroData.Name}: {item.DisplayName} возвращен в инвентарь.";
+        return true;
+    }
+
     private void SetHeroStateAtPosition(HeroRuntimeData heroData, HeroActivityState state, Vector2 mapPosition)
     {
         if (heroData == null || !_heroes.Contains(heroData))
@@ -208,6 +255,23 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
     }
 
+    private void RefreshHeroAfterEquipmentChange(HeroRuntimeData heroData)
+    {
+        if (heroData == null)
+        {
+            return;
+        }
+
+        heroData.SetMaxHp(CalculateHeroMaxHp(heroData), false);
+        RefreshHeroHealthBar(heroData);
+        _raidSystem.RefreshHeroCombatStats(heroData);
+
+        if (_selectedHero == heroData)
+        {
+            ShowHeroInfo(heroData);
+        }
+    }
+
     private void Initialize()
     {
         if (_initialized)
@@ -224,6 +288,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         _createHeroButton.onClick.AddListener(CreateHero);
         ConfigurePrimaryStatUpgradeButtonVisuals();
         AddPrimaryStatUpgradeListeners();
+        ConfigureHeroItemSlots();
 
         CreateInitialDicePool();
         ResetInfoText();
@@ -277,6 +342,24 @@ public sealed class NecropolisSystem : MonoBehaviour
             _createHeroButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene UI references.");
+        }
+
+        if (_itemStorage == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(ItemStorageSystem)} reference.");
+        }
+
+        if (_heroItemSlots == null || _heroItemSlots.Length < HeroRuntimeData.EquipmentSlotCount)
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires hero item slot references.");
+        }
+
+        for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount; i++)
+        {
+            if (_heroItemSlots[i] == null)
+            {
+                throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires hero item slot {i + 1} reference.");
+            }
         }
 
         if (_enduranceUpgradeButton == null || _strengthUpgradeButton == null || _agilityUpgradeButton == null ||
@@ -410,6 +493,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         _heroInfoTitle.text = "Герой";
         _heroInfoText.text = "Созданные герои появятся рядом с Некрополем.\nКлик по герою покажет статы.";
         RefreshPrimaryStatUpgradeButtons(null);
+        RefreshHeroItemSlots(null);
     }
 
     private void RefreshUi()
@@ -491,7 +575,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         stats.ClampAfterCreation(_config.StatsConfig);
 
-        float maxHp = CalculateHeroMaxHp(stats);
+        float maxHp = CalculateBaseHeroMaxHp(stats);
         HeroRuntimeData heroData = new HeroRuntimeData($"Герой {_nextHeroId}", stats, rollTexts, maxHp);
         SpawnHero(heroData);
 
@@ -564,6 +648,14 @@ public sealed class NecropolisSystem : MonoBehaviour
             }
 
             RefreshHeroHealthBar(heroData);
+        }
+    }
+
+    private void ConfigureHeroItemSlots()
+    {
+        for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount; i++)
+        {
+            _heroItemSlots[i].Configure(this, i);
         }
     }
 
@@ -710,18 +802,37 @@ public sealed class NecropolisSystem : MonoBehaviour
     {
         _selectedHero = heroData;
         RefreshHeroVisualStates();
+        RefreshHeroItemSlots(heroData);
         _heroInfoTitle.text = heroData.Name;
         string freeStatsLine = heroData.FreePrimaryStatPoints > 0
             ? $"Свободные статы: {heroData.FreePrimaryStatPoints}\n"
             : "";
+        PrimaryStats effectivePrimaryStats = heroData.GetEffectivePrimaryStats(_config.StatsConfig);
+        SecondaryStatsSnapshot effectiveSecondaryStats = heroData.GetEffectiveSecondaryStats(_config.StatsConfig);
 
         _heroInfoText.text = $"Состояние: {heroData.GetStateDisplayName()}\n" +
             $"Уровень: {heroData.Level}    Опыт: {heroData.GetExperienceDisplay(_config.LevelUpConfig)}\n" +
             freeStatsLine +
             $"{FormatHeroHealthLine(heroData)}\n\n" +
-            $"{heroData.Stats.GetSummary(_config.StatsConfig)}\n\n" +
-            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(heroData.Stats)}";
+            $"{effectivePrimaryStats.GetSummary(_config.StatsConfig)}\n\n" +
+            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(effectiveSecondaryStats)}";
         RefreshPrimaryStatUpgradeButtons(heroData);
+    }
+
+    private void RefreshHeroItemSlots(HeroRuntimeData heroData)
+    {
+        if (_heroItemSlots == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _heroItemSlots.Length; i++)
+        {
+            if (_heroItemSlots[i] != null)
+            {
+                _heroItemSlots[i].SetHero(heroData);
+            }
+        }
     }
 
     private void AddPrimaryStatUpgradeListeners()
@@ -889,7 +1000,7 @@ public sealed class NecropolisSystem : MonoBehaviour
             return;
         }
 
-        _selectedHero.SetMaxHp(CalculateHeroMaxHp(_selectedHero.Stats), false);
+        _selectedHero.SetMaxHp(CalculateHeroMaxHp(_selectedHero), false);
         RefreshHeroHealthBar(_selectedHero);
         _raidSystem.RefreshHeroCombatStats(_selectedHero);
         ShowHeroInfo(_selectedHero);
@@ -949,9 +1060,16 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
     }
 
-    private float CalculateHeroMaxHp(PrimaryStats stats)
+    private float CalculateBaseHeroMaxHp(PrimaryStats stats)
     {
         return Mathf.Max(1f, _config.StatsConfig.CalculateSecondaryStats(stats).MaxHp);
+    }
+
+    private float CalculateHeroMaxHp(HeroRuntimeData heroData)
+    {
+        return heroData != null
+            ? Mathf.Max(1f, heroData.GetEffectiveSecondaryStats(_config.StatsConfig).MaxHp)
+            : 1f;
     }
 
     private static string FormatHeroHealthLine(HeroRuntimeData heroData)

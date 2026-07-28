@@ -1022,7 +1022,7 @@ public sealed class RaidSystem : MonoBehaviour
 
     private void RefreshRaidHeroCombatStats(RaidHeroRuntimeData raidHero)
     {
-        raidHero.SecondaryStats = _statsConfig.CalculateSecondaryStats(raidHero.Hero.Stats);
+        raidHero.SecondaryStats = raidHero.Hero.GetEffectiveSecondaryStats(_statsConfig);
         raidHero.Hero.SetMaxHp(Mathf.Max(1f, raidHero.SecondaryStats.MaxHp), false);
         raidHero.MaxHp = raidHero.Hero.MaxHp;
 
