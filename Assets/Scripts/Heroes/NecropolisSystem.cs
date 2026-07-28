@@ -33,6 +33,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _heroInfoText = null;
     [SerializeField] private Button _createHeroButton = null;
     [SerializeField] private ItemStorageSystem _itemStorage = null;
+    [SerializeField] private ItemTooltipView _itemTooltip = null;
     [SerializeField] private HeroItemSlotView[] _heroItemSlots = new HeroItemSlotView[HeroRuntimeData.EquipmentSlotCount];
 
     [Header("Primary Stat Upgrade Buttons")]
@@ -87,6 +88,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
 
         RemovePrimaryStatUpgradeListeners();
+        _itemTooltip?.Hide();
     }
 
     private void Update()
@@ -288,6 +290,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         _createHeroButton.onClick.AddListener(CreateHero);
         ConfigurePrimaryStatUpgradeButtonVisuals();
         AddPrimaryStatUpgradeListeners();
+        _itemTooltip.Configure(_canvas, _config.StatsConfig);
         ConfigureHeroItemSlots();
 
         CreateInitialDicePool();
@@ -347,6 +350,11 @@ public sealed class NecropolisSystem : MonoBehaviour
         if (_itemStorage == null)
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(ItemStorageSystem)} reference.");
+        }
+
+        if (_itemTooltip == null)
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(ItemTooltipView)} reference.");
         }
 
         if (_heroItemSlots == null || _heroItemSlots.Length < HeroRuntimeData.EquipmentSlotCount)
@@ -655,7 +663,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     {
         for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount; i++)
         {
-            _heroItemSlots[i].Configure(this, i);
+            _heroItemSlots[i].Configure(this, i, _itemTooltip);
         }
     }
 

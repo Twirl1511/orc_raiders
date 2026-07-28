@@ -3,25 +3,28 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClickHandler
+public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private Image _background = null;
     [SerializeField] private Image _icon = null;
     [SerializeField] private TextMeshProUGUI _label = null;
 
     private NecropolisSystem _owner;
+    private ItemTooltipView _itemTooltip;
     private HeroRuntimeData _hero;
     private int _slotIndex;
 
-    public void Configure(NecropolisSystem owner, int slotIndex)
+    public void Configure(NecropolisSystem owner, int slotIndex, ItemTooltipView itemTooltip)
     {
         _owner = owner;
         _slotIndex = slotIndex;
+        _itemTooltip = itemTooltip;
         Refresh();
     }
 
     public void SetHero(HeroRuntimeData hero)
     {
+        _itemTooltip?.Hide();
         _hero = hero;
         Refresh();
     }
@@ -50,8 +53,25 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
 
         if (_owner != null && _hero != null && _owner.TryUnequipItemToStorage(_hero, _slotIndex))
         {
+            _itemTooltip?.Hide();
             Refresh();
         }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ItemRuntimeData item = _hero != null ? _hero.GetEquippedItem(_slotIndex) : null;
+
+        if (item != null && item.Definition != null)
+        {
+            _itemTooltip?.ShowItem(item, transform as RectTransform);
+        }
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ItemRuntimeData item = _hero != null ? _hero.GetEquippedItem(_slotIndex) : null;
+        _itemTooltip?.HideItem(item);
     }
 
     private void Refresh()
