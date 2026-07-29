@@ -9,6 +9,13 @@ using UnityEngine.UI;
 public sealed class RaidPanelView : MonoBehaviour
 {
     private static readonly Vector2 _fallbackPanelSize = new Vector2(440f, 390f);
+    private const float _headerLeft = 16f;
+    private const float _headerTitleTop = -12f;
+    private const float _headerTextTop = -14f;
+    private const float _headerGap = 8f;
+    private const float _headerTitleWidth = 110f;
+    private const float _headerTimerWidth = 78f;
+    private const float _headerMinimumStatusWidth = 80f;
 
     private readonly List<RaidHeroRowView> _heroRows = new List<RaidHeroRowView>();
     private readonly List<RaidEnemyRowView> _enemyRows = new List<RaidEnemyRowView>();
@@ -28,9 +35,11 @@ public sealed class RaidPanelView : MonoBehaviour
     private TextMeshProUGUI _logText;
     private TextMeshProUGUI _raidProgressText;
     private Image _raidProgressFill;
+    private RectTransform _raidProgressBarRoot;
     private Button _closeButton;
     private RectTransform _effectRoot;
     private Image _effectParticle;
+    private UiWindowMinimizeController _minimizeController;
     private bool _built;
 
     public RectTransform Root => _root;
@@ -57,6 +66,13 @@ public sealed class RaidPanelView : MonoBehaviour
         ClearEnemies();
         _closeButton.gameObject.SetActive(false);
         _effectParticle.gameObject.SetActive(false);
+        RefreshMinimizeState();
+    }
+
+    public void RefreshMinimizeState()
+    {
+        ApplyHeaderLayout();
+        _minimizeController?.CaptureContentAndRefreshState();
     }
 
     public bool ContainsScreenPoint(Vector2 screenPosition, Camera uiCamera)
@@ -74,6 +90,7 @@ public sealed class RaidPanelView : MonoBehaviour
     public void ShowWaiting(int raidNumber, float remainingSeconds, int assignedHeroes, int maxHeroSlots)
     {
         BuildIfNeeded();
+        PrepareMinimizedContentRefresh();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = "Исчезнет через";
         _timerText.text = FormatTimer(remainingSeconds);
@@ -87,6 +104,7 @@ public sealed class RaidPanelView : MonoBehaviour
         HideEnemyAreaMessage();
         _logText.text = "Перетащи героя в рейд";
         _closeButton.gameObject.SetActive(false);
+        RefreshMinimizeState();
     }
 
     public void ShowRecruiting(
@@ -97,6 +115,7 @@ public sealed class RaidPanelView : MonoBehaviour
         IReadOnlyList<RaidHeroViewData> heroes)
     {
         BuildIfNeeded();
+        PrepareMinimizedContentRefresh();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = "Добор отряда";
         _timerText.text = FormatTimer(remainingSeconds);
@@ -107,6 +126,7 @@ public sealed class RaidPanelView : MonoBehaviour
         HideEnemyAreaMessage();
         _logText.text = $"Герои: {assignedHeroes}/{maxHeroSlots}\nМожно добавить героя";
         _closeButton.gameObject.SetActive(false);
+        RefreshMinimizeState();
     }
 
     public void ShowBattle(
@@ -122,6 +142,7 @@ public sealed class RaidPanelView : MonoBehaviour
         IReadOnlyList<RaidEnemyViewData> enemies)
     {
         BuildIfNeeded();
+        PrepareMinimizedContentRefresh();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = $"Бой {battleNumber}/{battleCount}";
         _timerText.text = "";
@@ -132,6 +153,7 @@ public sealed class RaidPanelView : MonoBehaviour
         HideEnemyAreaMessage();
         SetRaidStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
+        RefreshMinimizeState();
     }
 
     public void ShowBattleTransition(
@@ -147,6 +169,7 @@ public sealed class RaidPanelView : MonoBehaviour
         int experienceGained)
     {
         BuildIfNeeded();
+        PrepareMinimizedContentRefresh();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = completeAfterLoot ? "Собирает лут" : $"К группе {nextBattleNumber}/{battleCount}";
         _timerText.text = "";
@@ -157,6 +180,7 @@ public sealed class RaidPanelView : MonoBehaviour
         ShowEnemyAreaMessage("Собирает лут");
         SetRaidStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
+        RefreshMinimizeState();
     }
 
     public void ShowCompleted(
@@ -171,6 +195,7 @@ public sealed class RaidPanelView : MonoBehaviour
         IReadOnlyList<RaidHeroViewData> heroes)
     {
         BuildIfNeeded();
+        PrepareMinimizedContentRefresh();
         _titleText.text = $"Рейд {raidNumber}";
         _statusText.text = success ? "Завершен" : "Провален";
         _timerText.text = "";
@@ -181,6 +206,7 @@ public sealed class RaidPanelView : MonoBehaviour
         HideEnemyAreaMessage();
         _logText.text = $"{message}\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}\nОпыт получен: {experienceGained}";
         _closeButton.gameObject.SetActive(true);
+        RefreshMinimizeState();
     }
 
     public IEnumerator PlayHeroAttackEffect(int heroIndex, int enemyIndex)
@@ -274,7 +300,7 @@ public sealed class RaidPanelView : MonoBehaviour
         _enemyAreaMessage.gameObject.SetActive(false);
         _logText = CreateText("Log", "Ожидание", new Vector2(20f, -216f), new Vector2(400f, 70f), 14f, TextAlignmentOptions.Left);
         _raidProgressText = CreateText("Raid Progress Label", "Прогресс рейда", new Vector2(20f, -292f), new Vector2(400f, 20f), 14f, TextAlignmentOptions.Left);
-        CreateBar("Raid Progress", new Vector2(20f, -316f), new Vector2(400f, 18f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _raidProgressFill);
+        _raidProgressBarRoot = CreateBar("Raid Progress", new Vector2(20f, -316f), new Vector2(400f, 18f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _raidProgressFill);
         _closeButton = CreateButton("Close Button", "Закрыть", new Vector2(320f, -350f), new Vector2(100f, 30f));
         _closeButton.onClick.AddListener(HandleCloseClicked);
         _closeButton.gameObject.SetActive(false);
@@ -283,6 +309,64 @@ public sealed class RaidPanelView : MonoBehaviour
         _effectParticle.gameObject.SetActive(false);
         SetHeroSetupControlsVisible(true);
         ClearHeroes();
+        ConfigureMinimizeController();
+        ApplyHeaderLayout();
+    }
+
+    private void PrepareMinimizedContentRefresh()
+    {
+        _minimizeController?.PrepareContentRefresh();
+    }
+
+    private void ConfigureMinimizeController()
+    {
+        _minimizeController = GetComponent<UiWindowMinimizeController>();
+
+        if (_minimizeController == null)
+        {
+            return;
+        }
+
+        _minimizeController.SetContentRoots(
+            _statusText.gameObject,
+            _timerText.gameObject,
+            _heroNameText.gameObject,
+            _heroHpBarRoot.gameObject,
+            _heroAttackBarRoot.gameObject,
+            _heroRowsRoot.gameObject,
+            _enemyRowsRoot.gameObject,
+            _logText.gameObject,
+            _raidProgressText.gameObject,
+            _raidProgressBarRoot.gameObject,
+            _closeButton.gameObject,
+            _effectRoot.gameObject);
+    }
+
+    private void ApplyHeaderLayout()
+    {
+        if (_root == null || _titleText == null || _statusText == null || _timerText == null)
+        {
+            return;
+        }
+
+        float panelWidth = Mathf.Max(_fallbackPanelSize.x, Mathf.Max(_root.rect.width, _root.sizeDelta.x));
+        float reservedRight = _minimizeController != null ? _minimizeController.GetReservedRightPadding() : 0f;
+        float rightLimit = Mathf.Max(
+            _headerLeft + _headerTitleWidth + _headerGap + _headerMinimumStatusWidth + _headerGap + _headerTimerWidth,
+            panelWidth - reservedRight);
+        float timerX = rightLimit - _headerTimerWidth;
+        float statusX = _headerLeft + _headerTitleWidth + _headerGap;
+        float statusWidth = Mathf.Max(_headerMinimumStatusWidth, timerX - statusX - _headerGap);
+
+        SetRect(_titleText.rectTransform, _headerLeft, _headerTitleTop, _headerTitleWidth, 34f);
+        SetRect(_statusText.rectTransform, statusX, _headerTextTop, statusWidth, 30f);
+        SetRect(_timerText.rectTransform, timerX, _headerTextTop, _headerTimerWidth, 30f);
+    }
+
+    private static void SetRect(RectTransform rectTransform, float x, float y, float width, float height)
+    {
+        rectTransform.anchoredPosition = new Vector2(x, y);
+        rectTransform.sizeDelta = new Vector2(width, height);
     }
 
     private void SetHeroes(IReadOnlyList<RaidHeroViewData> heroes)

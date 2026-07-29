@@ -64,6 +64,7 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Avoid overlapping text, tiny click targets, and layout that breaks when labels or numbers change.
 - Prefer TextMeshPro for visible text.
 - Put reusable UI pieces into prefabs when they are likely to be repeated or tuned often.
+- Every new player-facing UI window or reusable window template must support hiding/collapsing and restoring. Prefer `UiWindowMinimizeController` with scene/prefab-authored toggle buttons and serialized content roots; keep the title/header visible while collapsed, and reserve layout space so the toggle never covers text or controls.
 - Make key UI state obvious: selected, disabled, affordable/unaffordable, cooldown, empty, full, warning, success.
 - If a UI control affects gameplay tuning, connect it to a clear config value instead of hardcoding the value in the UI component.
 
