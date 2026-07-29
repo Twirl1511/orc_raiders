@@ -30,6 +30,15 @@ The game is UI-heavy: most of the player-facing visuals and interactions live in
 - Bootstrap scripts may validate serialized references and configure existing components, but they must not call `new GameObject`, `AddComponent`, scene hierarchy builders, or broad scene searches to repair the scene.
 - Do not add editor menu builders that generate the static game scene hierarchy. Build and adjust scene objects directly in the scene/prefabs.
 
+## Unity MCP Workflow
+
+- When Unity MCP is connected, prefer MCP resources/tools over guessing scene/editor state from files.
+- Before modifying scenes, prefabs, or serialized Unity objects, read relevant MCP state first: editor state, active scene, selection, hierarchy, prefab stage, or console as needed.
+- Use MCP to apply scene/prefab/component changes directly when practical, then verify with Unity Console and editor readiness state.
+- After script changes, refresh/compile through Unity MCP when practical and check Console errors before continuing.
+- Do not use runtime/bootstrap code to create missing static scene objects; fix them through scene/prefab edits via MCP.
+- If multiple Unity instances are connected, explicitly select the intended instance before using MCP tools.
+
 ## Config Workflow
 
 - Follow the config workflow from `D:/WORK/Cradle of Winter`: ScriptableObject configs live as separate assets, but create only configs that are needed for explicitly requested mechanics.

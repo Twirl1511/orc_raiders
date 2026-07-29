@@ -160,6 +160,52 @@ public sealed class StatsConfig : ScriptableObject
         return GetFallbackSecondaryStatDisplayName(statType);
     }
 
+    public string GetPrimaryStatDescription(PrimaryStatType statType)
+    {
+        for (int i = 0; i < _primaryStats.Count; i++)
+        {
+            PrimaryStatDefinition definition = _primaryStats[i];
+
+            if (definition != null && definition.StatType == statType)
+            {
+                return definition.Description;
+            }
+        }
+
+        return "";
+    }
+
+    public string GetSecondaryStatDescription(SecondaryStatType statType)
+    {
+        for (int i = 0; i < _secondaryStats.Count; i++)
+        {
+            SecondaryStatDefinition definition = _secondaryStats[i];
+
+            if (definition != null && definition.StatType == statType)
+            {
+                return definition.Description;
+            }
+        }
+
+        return "";
+    }
+
+    public string FormatSecondaryStatValue(SecondaryStatType statType, float value)
+    {
+        SecondaryStatDefinition definition = GetSecondaryStatDefinition(statType);
+        string suffix = definition != null ? definition.ValueSuffix : "";
+
+        switch (statType)
+        {
+            case SecondaryStatType.AttackInterval:
+                return FormatValue(Mathf.Max(0.01f, value), suffix);
+            case SecondaryStatType.Armor:
+                return $"{FormatValue(value, suffix)} ({FormatValue(CalculateArmorBlockedDamagePercent(value), "%")})";
+            default:
+                return FormatValue(value, suffix);
+        }
+    }
+
     public string GetSecondaryStatsSummary(PrimaryStats primaryStats)
     {
         return GetSecondaryStatsSummary(CalculateSecondaryStats(primaryStats));
@@ -279,6 +325,21 @@ public sealed class StatsConfig : ScriptableObject
             : value.ToString("0.##", CultureInfo.InvariantCulture);
 
         return $"{number}{suffix}";
+    }
+
+    private SecondaryStatDefinition GetSecondaryStatDefinition(SecondaryStatType statType)
+    {
+        for (int i = 0; i < _secondaryStats.Count; i++)
+        {
+            SecondaryStatDefinition definition = _secondaryStats[i];
+
+            if (definition != null && definition.StatType == statType)
+            {
+                return definition;
+            }
+        }
+
+        return null;
     }
 
     private string FormatSecondaryStatLine(SecondaryStatDefinition definition, float value)

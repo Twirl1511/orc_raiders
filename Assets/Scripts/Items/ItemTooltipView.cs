@@ -32,6 +32,7 @@ public sealed class ItemTooltipView : MonoBehaviour
     private RectTransform _currentAnchor;
     private Vector2 _currentBaseSize;
     private ItemRuntimeData _shownItem;
+    private bool _showingText;
     private float _preferredScale = 1f;
     private float _currentScale = 1f;
 
@@ -66,6 +67,7 @@ public sealed class ItemTooltipView : MonoBehaviour
 
         StopAnimation();
         _shownItem = item;
+        _showingText = false;
         _currentAnchor = anchor;
         _currentScale = ClampTooltipScale(_preferredScale);
         _panel.gameObject.SetActive(true);
@@ -84,7 +86,43 @@ public sealed class ItemTooltipView : MonoBehaviour
         PrepareText(_titleText);
         PrepareText(_bodyText);
 
-        _currentBaseSize = ResizeToContent();
+        _currentBaseSize = ResizeToContent(true);
+        PrepareVisibleCanvasGroup(0f);
+        _panel.localScale = Vector3.one * GetCollapsedScale();
+        PositionNearAnchor(anchor, _currentBaseSize);
+        StartVisibilityAnimation(0f, 1f, GetCollapsedScale(), _currentScale, false);
+    }
+
+    public void ShowText(string title, string body, RectTransform anchor)
+    {
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body) || anchor == null ||
+            !HasRequiredReferences())
+        {
+            Hide();
+            return;
+        }
+
+        StopAnimation();
+        _shownItem = null;
+        _showingText = true;
+        _currentAnchor = anchor;
+        _currentScale = ClampTooltipScale(_preferredScale);
+        _panel.gameObject.SetActive(true);
+        _panel.SetAsLastSibling();
+
+        if (_icon != null)
+        {
+            _icon.sprite = null;
+            _icon.enabled = false;
+            _icon.raycastTarget = false;
+        }
+
+        _titleText.text = title;
+        _bodyText.text = body;
+        PrepareText(_titleText);
+        PrepareText(_bodyText);
+
+        _currentBaseSize = ResizeToContent(false);
         PrepareVisibleCanvasGroup(0f);
         _panel.localScale = Vector3.one * GetCollapsedScale();
         PositionNearAnchor(anchor, _currentBaseSize);
@@ -99,10 +137,19 @@ public sealed class ItemTooltipView : MonoBehaviour
         }
     }
 
+    public void HideText(RectTransform anchor)
+    {
+        if (_showingText && (_currentAnchor == anchor || anchor == null))
+        {
+            Hide();
+        }
+    }
+
     public void Hide()
     {
         _shownItem = null;
         _currentAnchor = null;
+        _showingText = false;
 
         if (!Application.isPlaying || !isActiveAndEnabled || _panel == null || _canvasGroup == null ||
             _canvasGroup.alpha <= 0f)
@@ -117,7 +164,8 @@ public sealed class ItemTooltipView : MonoBehaviour
 
     public void AdjustScale(float scrollDelta)
     {
-        if (_shownItem == null || _currentAnchor == null || _panel == null || Mathf.Approximately(scrollDelta, 0f))
+        if ((_shownItem == null && !_showingText) || _currentAnchor == null || _panel == null ||
+            Mathf.Approximately(scrollDelta, 0f))
         {
             return;
         }
@@ -150,6 +198,7 @@ public sealed class ItemTooltipView : MonoBehaviour
         StopAnimation();
         _shownItem = null;
         _currentAnchor = null;
+        _showingText = false;
         _currentScale = ClampTooltipScale(_preferredScale);
 
         ApplyHiddenVisuals(true);
@@ -215,12 +264,18 @@ public sealed class ItemTooltipView : MonoBehaviour
         text.overflowMode = TextOverflowModes.Overflow;
     }
 
-    private Vector2 ResizeToContent()
+    private Vector2 ResizeToContent(bool useIcon)
     {
         float width = Mathf.Max(_width, _iconSize + _padding * 2f);
         float innerWidth = Mathf.Max(1f, width - _padding * 2f);
-        float titleWidth = Mathf.Max(1f, innerWidth - _iconSize - _gap);
-        float titleHeight = Mathf.Max(_iconSize, _titleText.GetPreferredValues(_titleText.text, titleWidth, 0f).y);
+        float titleWidth = useIcon ? Mathf.Max(1f, innerWidth - _iconSize - _gap) : innerWidth;
+        float titleHeight = _titleText.GetPreferredValues(_titleText.text, titleWidth, 0f).y;
+
+        if (useIcon)
+        {
+            titleHeight = Mathf.Max(_iconSize, titleHeight);
+        }
+
         float bodyHeight = Mathf.Max(1f, _bodyText.GetPreferredValues(_bodyText.text, innerWidth, 0f).y);
         float height = _padding + titleHeight + _gap + bodyHeight + _padding;
 
@@ -233,13 +288,15 @@ public sealed class ItemTooltipView : MonoBehaviour
         iconRect.anchorMax = new Vector2(0f, 1f);
         iconRect.pivot = new Vector2(0f, 1f);
         iconRect.anchoredPosition = new Vector2(_padding, -_padding);
-        iconRect.sizeDelta = new Vector2(_iconSize, _iconSize);
+        iconRect.sizeDelta = useIcon ? new Vector2(_iconSize, _iconSize) : Vector2.zero;
 
         RectTransform titleRect = _titleText.rectTransform;
         titleRect.anchorMin = new Vector2(0f, 1f);
         titleRect.anchorMax = new Vector2(0f, 1f);
         titleRect.pivot = new Vector2(0f, 1f);
-        titleRect.anchoredPosition = new Vector2(_padding + _iconSize + _gap, -_padding);
+        titleRect.anchoredPosition = useIcon
+            ? new Vector2(_padding + _iconSize + _gap, -_padding)
+            : new Vector2(_padding, -_padding);
         titleRect.sizeDelta = new Vector2(titleWidth, titleHeight);
 
         RectTransform bodyRect = _bodyText.rectTransform;

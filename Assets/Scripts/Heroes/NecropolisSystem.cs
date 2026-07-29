@@ -7,16 +7,9 @@ using UnityEngine.UI;
 
 public sealed class NecropolisSystem : MonoBehaviour
 {
-    private const int _heroInfoHpBarCells = 14;
-    private const char _filledHpCell = '#';
-    private const char _emptyHpCell = '-';
-    private static readonly Vector2 _primaryStatUpgradeButtonSize = new Vector2(20f, 18f);
     private static readonly Color _selectedHeroOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
     private static readonly Vector2 _selectedHeroOutlinePadding = new Vector2(0.14f, 0.14f);
     private const float _heroLabelScale = 0.25f;
-    private const float _primaryStatUpgradeButtonXRatio = 0.37f;
-    private const int _primaryStatLineIndexWithoutFreeStats = 4;
-    private const int _primaryStatLineIndexWithFreeStats = 5;
 
     [Header("Config")]
     [SerializeField] private NecropolisConfig _config = null;
@@ -30,19 +23,11 @@ public sealed class NecropolisSystem : MonoBehaviour
     [SerializeField] private Button _diceButtonTemplate = null;
     [SerializeField] private TextMeshProUGUI _selectedDiceLabel = null;
     [SerializeField] private TextMeshProUGUI _statusText = null;
-    [SerializeField] private TextMeshProUGUI _heroInfoTitle = null;
-    [SerializeField] private TextMeshProUGUI _heroInfoText = null;
-    [SerializeField] private CanvasGroup _heroInfoPanelCanvasGroup = null;
+    [SerializeField] private HeroInfoPanelView _heroInfoPanel = null;
     [SerializeField] private Button _createHeroButton = null;
     [SerializeField] private ItemStorageSystem _itemStorage = null;
     [SerializeField] private ItemTooltipView _itemTooltip = null;
     [SerializeField] private HeroItemSlotView[] _heroItemSlots = new HeroItemSlotView[HeroRuntimeData.EquipmentSlotCount];
-
-    [Header("Primary Stat Upgrade Buttons")]
-    [SerializeField] private Button _enduranceUpgradeButton = null;
-    [SerializeField] private Button _strengthUpgradeButton = null;
-    [SerializeField] private Button _agilityUpgradeButton = null;
-    [SerializeField] private Button _intelligenceUpgradeButton = null;
 
     [Header("Rest Zone")]
     [SerializeField] private Collider2D _restZoneCollider = null;
@@ -90,7 +75,11 @@ public sealed class NecropolisSystem : MonoBehaviour
             _createHeroButton.onClick.RemoveListener(CreateHero);
         }
 
-        RemovePrimaryStatUpgradeListeners();
+        if (_heroInfoPanel != null)
+        {
+            _heroInfoPanel.PrimaryStatUpgradeRequested -= SpendPrimaryStatPoint;
+        }
+
         _itemTooltip?.Hide();
     }
 
@@ -191,7 +180,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         if (_selectedHero == heroData)
         {
-            RefreshHeroInfoText(heroData);
+            ShowHeroInfo(heroData);
         }
     }
 
@@ -324,9 +313,10 @@ public sealed class NecropolisSystem : MonoBehaviour
         _diceButtonTemplate.gameObject.SetActive(false);
         _createHeroButton.onClick.RemoveListener(CreateHero);
         _createHeroButton.onClick.AddListener(CreateHero);
-        ConfigurePrimaryStatUpgradeButtonVisuals();
-        AddPrimaryStatUpgradeListeners();
         _itemTooltip.Configure(_canvas, _config.StatsConfig, _tooltipConfig);
+        _heroInfoPanel.Configure(_itemTooltip);
+        _heroInfoPanel.PrimaryStatUpgradeRequested -= SpendPrimaryStatPoint;
+        _heroInfoPanel.PrimaryStatUpgradeRequested += SpendPrimaryStatPoint;
         ConfigureHeroItemSlots();
 
         CreateInitialDicePool();
@@ -382,10 +372,14 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
 
         if (_canvas == null || _availableDiceRoot == null || _selectedDiceRoot == null || _diceButtonTemplate == null ||
-            _selectedDiceLabel == null || _statusText == null || _heroInfoTitle == null || _heroInfoText == null ||
-            _heroInfoPanelCanvasGroup == null || _createHeroButton == null)
+            _selectedDiceLabel == null || _statusText == null || _heroInfoPanel == null || _createHeroButton == null)
         {
             throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene UI references.");
+        }
+
+        if (!_heroInfoPanel.HasRequiredReferences())
+        {
+            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires configured {nameof(HeroInfoPanelView)} references.");
         }
 
         if (_itemStorage == null)
@@ -409,12 +403,6 @@ public sealed class NecropolisSystem : MonoBehaviour
             {
                 throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires hero item slot {i + 1} reference.");
             }
-        }
-
-        if (_enduranceUpgradeButton == null || _strengthUpgradeButton == null || _agilityUpgradeButton == null ||
-            _intelligenceUpgradeButton == null)
-        {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires primary stat upgrade button references.");
         }
 
         if (_restZoneCollider == null)
@@ -856,50 +844,16 @@ public sealed class NecropolisSystem : MonoBehaviour
         SetHeroInfoPanelVisible(true);
         RefreshHeroVisualStates();
         RefreshHeroItemSlots(heroData);
-        _heroInfoTitle.text = heroData.Name;
-        RefreshHeroInfoText(heroData);
+        _heroInfoPanel.ShowHero(heroData, _config.StatsConfig, _config.LevelUpConfig, CanEditHeroPanel(heroData));
         _raidSystem?.RefreshHeroSelectionVisuals();
-    }
-
-    private void RefreshHeroInfoText(HeroRuntimeData heroData)
-    {
-        if (heroData == null || _heroInfoText == null)
-        {
-            return;
-        }
-
-        string freeStatsLine = heroData.FreePrimaryStatPoints > 0
-            ? $"Свободные статы: {heroData.FreePrimaryStatPoints}\n"
-            : "";
-        PrimaryStats effectivePrimaryStats = heroData.GetEffectivePrimaryStats(_config.StatsConfig);
-        SecondaryStatsSnapshot effectiveSecondaryStats = heroData.GetEffectiveSecondaryStats(_config.StatsConfig);
-
-        _heroInfoText.text = $"Состояние: {heroData.GetStateDisplayName()}\n" +
-            $"Уровень: {heroData.Level}    Опыт: {heroData.GetExperienceDisplay(_config.LevelUpConfig)}\n" +
-            freeStatsLine +
-            $"{FormatHeroHealthLine(heroData)}\n\n" +
-            $"{effectivePrimaryStats.GetSummary(_config.StatsConfig)}\n\n" +
-            $"Вторичные статы:\n{_config.StatsConfig.GetSecondaryStatsSummary(effectiveSecondaryStats)}";
-        RefreshPrimaryStatUpgradeButtons(heroData);
     }
 
     private void ClearHeroSelection()
     {
         _selectedHero = null;
         _itemTooltip?.Hide();
+        _heroInfoPanel?.ClearHero();
         SetHeroInfoPanelVisible(false);
-
-        if (_heroInfoTitle != null)
-        {
-            _heroInfoTitle.text = "";
-        }
-
-        if (_heroInfoText != null)
-        {
-            _heroInfoText.text = "";
-        }
-
-        RefreshPrimaryStatUpgradeButtons(null);
         RefreshHeroItemSlots(null);
         RefreshHeroVisualStates();
         _raidSystem?.RefreshHeroSelectionVisuals();
@@ -907,14 +861,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
     private void SetHeroInfoPanelVisible(bool visible)
     {
-        if (_heroInfoPanelCanvasGroup == null)
-        {
-            return;
-        }
-
-        _heroInfoPanelCanvasGroup.alpha = visible ? 1f : 0f;
-        _heroInfoPanelCanvasGroup.interactable = visible;
-        _heroInfoPanelCanvasGroup.blocksRaycasts = visible;
+        _heroInfoPanel?.SetVisible(visible);
     }
 
     private void RefreshHeroItemSlots(HeroRuntimeData heroData)
@@ -931,164 +878,6 @@ public sealed class NecropolisSystem : MonoBehaviour
                 _heroItemSlots[i].SetHero(heroData, CanEditHeroPanel(heroData));
             }
         }
-    }
-
-    private void AddPrimaryStatUpgradeListeners()
-    {
-        _enduranceUpgradeButton.onClick.RemoveListener(SpendEndurancePoint);
-        _strengthUpgradeButton.onClick.RemoveListener(SpendStrengthPoint);
-        _agilityUpgradeButton.onClick.RemoveListener(SpendAgilityPoint);
-        _intelligenceUpgradeButton.onClick.RemoveListener(SpendIntelligencePoint);
-
-        _enduranceUpgradeButton.onClick.AddListener(SpendEndurancePoint);
-        _strengthUpgradeButton.onClick.AddListener(SpendStrengthPoint);
-        _agilityUpgradeButton.onClick.AddListener(SpendAgilityPoint);
-        _intelligenceUpgradeButton.onClick.AddListener(SpendIntelligencePoint);
-    }
-
-    private void ConfigurePrimaryStatUpgradeButtonVisuals()
-    {
-        ConfigurePrimaryStatUpgradeButtonVisual(_enduranceUpgradeButton);
-        ConfigurePrimaryStatUpgradeButtonVisual(_strengthUpgradeButton);
-        ConfigurePrimaryStatUpgradeButtonVisual(_agilityUpgradeButton);
-        ConfigurePrimaryStatUpgradeButtonVisual(_intelligenceUpgradeButton);
-    }
-
-    private static void ConfigurePrimaryStatUpgradeButtonVisual(Button button)
-    {
-        if (button == null)
-        {
-            return;
-        }
-
-        Image image = button.GetComponent<Image>();
-
-        if (image != null)
-        {
-            image.color = new Color(0.92f, 0.92f, 0.9f, 1f);
-            image.raycastTarget = true;
-        }
-
-        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
-
-        if (label != null)
-        {
-            label.text = "+";
-            label.fontSize = 16f;
-            label.color = Color.black;
-            label.alignment = TextAlignmentOptions.Center;
-            label.textWrappingMode = TextWrappingModes.NoWrap;
-            label.overflowMode = TextOverflowModes.Ellipsis;
-            label.raycastTarget = false;
-        }
-    }
-
-    private void RemovePrimaryStatUpgradeListeners()
-    {
-        if (_enduranceUpgradeButton != null)
-        {
-            _enduranceUpgradeButton.onClick.RemoveListener(SpendEndurancePoint);
-        }
-
-        if (_strengthUpgradeButton != null)
-        {
-            _strengthUpgradeButton.onClick.RemoveListener(SpendStrengthPoint);
-        }
-
-        if (_agilityUpgradeButton != null)
-        {
-            _agilityUpgradeButton.onClick.RemoveListener(SpendAgilityPoint);
-        }
-
-        if (_intelligenceUpgradeButton != null)
-        {
-            _intelligenceUpgradeButton.onClick.RemoveListener(SpendIntelligencePoint);
-        }
-    }
-
-    private void RefreshPrimaryStatUpgradeButtons(HeroRuntimeData heroData)
-    {
-        _heroInfoText.ForceMeshUpdate();
-
-        PositionPrimaryStatUpgradeButton(_enduranceUpgradeButton, heroData, 0);
-        PositionPrimaryStatUpgradeButton(_strengthUpgradeButton, heroData, 1);
-        PositionPrimaryStatUpgradeButton(_agilityUpgradeButton, heroData, 2);
-        PositionPrimaryStatUpgradeButton(_intelligenceUpgradeButton, heroData, 3);
-
-        RefreshPrimaryStatUpgradeButton(_enduranceUpgradeButton, heroData, PrimaryStatType.Endurance);
-        RefreshPrimaryStatUpgradeButton(_strengthUpgradeButton, heroData, PrimaryStatType.Strength);
-        RefreshPrimaryStatUpgradeButton(_agilityUpgradeButton, heroData, PrimaryStatType.Agility);
-        RefreshPrimaryStatUpgradeButton(_intelligenceUpgradeButton, heroData, PrimaryStatType.Intelligence);
-    }
-
-    private void PositionPrimaryStatUpgradeButton(Button button, HeroRuntimeData heroData, int rowIndex)
-    {
-        if (button == null || _heroInfoText == null)
-        {
-            return;
-        }
-
-        RectTransform rectTransform = button.transform as RectTransform;
-
-        if (rectTransform == null)
-        {
-            return;
-        }
-
-        RectTransform textRectTransform = _heroInfoText.rectTransform;
-        rectTransform.SetParent(textRectTransform, false);
-        rectTransform.anchorMin = new Vector2(0f, 1f);
-        rectTransform.anchorMax = new Vector2(0f, 1f);
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        rectTransform.sizeDelta = _primaryStatUpgradeButtonSize;
-
-        TMP_TextInfo textInfo = _heroInfoText.textInfo;
-        int primaryStatLineIndex = (heroData != null && heroData.FreePrimaryStatPoints > 0
-            ? _primaryStatLineIndexWithFreeStats
-            : _primaryStatLineIndexWithoutFreeStats) + rowIndex;
-
-        if (primaryStatLineIndex < 0 || primaryStatLineIndex >= textInfo.lineCount)
-        {
-            return;
-        }
-
-        TMP_LineInfo lineInfo = textInfo.lineInfo[primaryStatLineIndex];
-        Rect textRect = textRectTransform.rect;
-        float x = textRect.width * _primaryStatUpgradeButtonXRatio;
-        float y = ((lineInfo.ascender + lineInfo.descender) * 0.5f) - textRect.yMax;
-        rectTransform.anchoredPosition = new Vector2(x, y);
-    }
-
-    private void RefreshPrimaryStatUpgradeButton(Button button, HeroRuntimeData heroData, PrimaryStatType statType)
-    {
-        if (button == null)
-        {
-            return;
-        }
-
-        bool visible = heroData != null && heroData.FreePrimaryStatPoints > 0;
-        button.gameObject.SetActive(visible);
-        button.interactable = visible && CanEditHeroPanel(heroData) && heroData.CanSpendFreePrimaryStatPoint(statType, _config.StatsConfig);
-    }
-
-    private void SpendEndurancePoint()
-    {
-        SpendPrimaryStatPoint(PrimaryStatType.Endurance);
-    }
-
-    private void SpendStrengthPoint()
-    {
-        SpendPrimaryStatPoint(PrimaryStatType.Strength);
-    }
-
-    private void SpendAgilityPoint()
-    {
-        SpendPrimaryStatPoint(PrimaryStatType.Agility);
-    }
-
-    private void SpendIntelligencePoint()
-    {
-        SpendPrimaryStatPoint(PrimaryStatType.Intelligence);
     }
 
     private void SpendPrimaryStatPoint(PrimaryStatType statType)
@@ -1174,21 +963,6 @@ public sealed class NecropolisSystem : MonoBehaviour
         return heroData != null
             ? Mathf.Max(1f, heroData.GetEffectiveSecondaryStats(_config.StatsConfig).MaxHp)
             : 1f;
-    }
-
-    private static string FormatHeroHealthLine(HeroRuntimeData heroData)
-    {
-        int currentHp = Mathf.CeilToInt(heroData.CurrentHp);
-        int maxHp = Mathf.CeilToInt(heroData.MaxHp);
-        return $"Здоровье: {currentHp}/{maxHp} <mspace=0.45em>{FormatHpBar(heroData.CurrentHp, heroData.MaxHp)}</mspace>";
-    }
-
-    private static string FormatHpBar(float currentHp, float maxHp)
-    {
-        float ratio = maxHp <= 0f ? 0f : Mathf.Clamp01(currentHp / maxHp);
-        int filledCells = Mathf.Clamp(Mathf.RoundToInt(ratio * _heroInfoHpBarCells), 0, _heroInfoHpBarCells);
-        int emptyCells = _heroInfoHpBarCells - filledCells;
-        return $"<color=#FFFFFF>{new string(_filledHpCell, filledCells)}</color><color=#5B6570>{new string(_emptyHpCell, emptyCells)}</color>";
     }
 
     private Sprite CreateWhiteSprite()
