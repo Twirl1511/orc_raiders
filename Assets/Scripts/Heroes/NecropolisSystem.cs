@@ -11,7 +11,6 @@ public sealed class NecropolisSystem : MonoBehaviour
     private static readonly Vector2 _selectedHeroOutlinePadding = new Vector2(0.14f, 0.14f);
     private const float _selectedHeroOutlineThickness = 0.035f;
     private const float _minSpriteWorldSize = 0.0001f;
-    private const float _heroLabelScale = 0.25f;
 
     [Header("Config")]
     [SerializeField] private NecropolisConfig _config = null;
@@ -671,14 +670,13 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         GameObject selectionOutline = CreateHeroSelectionOutline(heroObject.transform, visualSize);
         HeroMapHealthBar healthBar = CreateHeroHealthBar(heroObject.transform, visualSize);
-        TextMeshPro label = CreateHeroLabel(heroObject.transform, heroData.Name, visualSize);
         heroData.SetMapPosition(GetDefaultHeroPositionForState(heroData, HeroActivityState.OnBase));
         _heroes.Add(heroData);
         heroData.AttachView(heroObject);
         _heroDataByObject.Add(colliderObject, heroData);
         _selectionOutlineByHero.Add(heroData, selectionOutline);
         _healthBarByHero.Add(heroData, healthBar);
-        HeroMapVisual mapVisual = new HeroMapVisual(baseRenderer, headRenderer, equipmentRenderers, frontEquipmentRenderer, collider, selectionOutline, label, healthBar, visualSize);
+        HeroMapVisual mapVisual = new HeroMapVisual(baseRenderer, headRenderer, equipmentRenderers, frontEquipmentRenderer, collider, selectionOutline, healthBar, visualSize);
         _mapVisualByHero.Add(heroData, mapVisual);
         mapVisual.RefreshEquipment(heroData);
         RefreshHeroVisualStates();
@@ -747,28 +745,6 @@ public sealed class NecropolisSystem : MonoBehaviour
         int row = indexInState / maxHeroesPerRow;
         int column = indexInState % maxHeroesPerRow;
         return firstPosition + new Vector2(spacing.x * column, spacing.y - row * 1.2f);
-    }
-
-    private TextMeshPro CreateHeroLabel(Transform parent, string text, Vector2 visualSize)
-    {
-        GameObject labelObject = new GameObject("Label");
-        labelObject.transform.SetParent(parent, false);
-        labelObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
-        labelObject.transform.localScale = new Vector3(_heroLabelScale, _heroLabelScale, 1f);
-
-        TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
-        label.text = text;
-        label.fontSize = 4f;
-        label.enableAutoSizing = true;
-        label.fontSizeMin = 1f;
-        label.fontSizeMax = 4f;
-        label.color = Color.black;
-        label.alignment = TextAlignmentOptions.Center;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.overflowMode = TextOverflowModes.Ellipsis;
-        label.sortingOrder = _config.HeroLabelSortingOrder;
-        label.rectTransform.sizeDelta = GetHeroLabelRectSize(visualSize);
-        return label;
     }
 
     private GameObject CreateHeroSelectionOutline(Transform parent, Vector2 visualSize)
@@ -974,11 +950,6 @@ public sealed class NecropolisSystem : MonoBehaviour
         {
             mapVisual.RefreshEquipment(heroData);
         }
-    }
-
-    private static Vector2 GetHeroLabelRectSize(Vector2 visualSize)
-    {
-        return new Vector2(visualSize.x * 0.92f / _heroLabelScale, visualSize.y * 0.9f / _heroLabelScale);
     }
 
     private static Vector2 GetHeroHealthBarSize(Vector2 visualSize)
@@ -1190,7 +1161,6 @@ public sealed class NecropolisSystem : MonoBehaviour
         private readonly SpriteRenderer _frontEquipmentRenderer;
         private readonly BoxCollider2D _collider;
         private readonly GameObject _selectionOutline;
-        private readonly TextMeshPro _label;
         private readonly HeroMapHealthBar _healthBar;
         private Vector2 _visualSize;
 
@@ -1201,7 +1171,6 @@ public sealed class NecropolisSystem : MonoBehaviour
             SpriteRenderer frontEquipmentRenderer,
             BoxCollider2D collider,
             GameObject selectionOutline,
-            TextMeshPro label,
             HeroMapHealthBar healthBar,
             Vector2 visualSize)
         {
@@ -1211,7 +1180,6 @@ public sealed class NecropolisSystem : MonoBehaviour
             _frontEquipmentRenderer = frontEquipmentRenderer;
             _collider = collider;
             _selectionOutline = selectionOutline;
-            _label = label;
             _healthBar = healthBar;
             _visualSize = visualSize;
         }
@@ -1252,11 +1220,6 @@ public sealed class NecropolisSystem : MonoBehaviour
             }
 
             SetHeroSelectionOutlineSize(_selectionOutline, visualSize, outlinePadding);
-
-            if (_label != null)
-            {
-                _label.rectTransform.sizeDelta = GetHeroLabelRectSize(visualSize);
-            }
 
             _healthBar?.SetSize(GetHeroHealthBarSize(visualSize), GetHeroHealthBarPosition(visualSize));
         }

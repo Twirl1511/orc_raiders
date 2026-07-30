@@ -45,12 +45,8 @@ public sealed class ItemButtonView : MonoBehaviour, IPointerEnterHandler, IPoint
 
         if (_label != null)
         {
-            _label.text = definition != null ? definition.DisplayName : "";
-            _label.enableAutoSizing = true;
-            _label.fontSizeMin = 7f;
-            _label.fontSizeMax = 12f;
-            _label.textWrappingMode = TextWrappingModes.Normal;
-            _label.overflowMode = TextOverflowModes.Ellipsis;
+            _label.text = "";
+            _label.enabled = false;
             _label.raycastTarget = false;
         }
     }
