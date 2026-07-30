@@ -11,14 +11,18 @@ public enum HeroActivityState
 public sealed class HeroRuntimeData
 {
     public const int EquipmentSlotCount = 3;
+    public const int WeaponSlotIndex = 0;
+    public const int ArmorSlotIndex = 1;
+    public const int ReservedSlotIndex = 2;
 
     private readonly List<string> _rollTexts;
     private readonly ItemRuntimeData[] _equippedItems = new ItemRuntimeData[EquipmentSlotCount];
 
-    public HeroRuntimeData(string name, PrimaryStats stats, List<string> rollTexts, float maxHp)
+    public HeroRuntimeData(string name, PrimaryStats stats, List<string> rollTexts, float maxHp, Sprite baseSprite)
     {
         Name = name;
         Stats = stats;
+        BaseSprite = baseSprite;
         _rollTexts = rollTexts ?? new List<string>();
         State = HeroActivityState.OnBase;
         SetMaxHp(maxHp, true);
@@ -26,6 +30,7 @@ public sealed class HeroRuntimeData
 
     public string Name { get; }
     public PrimaryStats Stats { get; }
+    public Sprite BaseSprite { get; }
     public IReadOnlyList<string> RollTexts => _rollTexts;
     public HeroActivityState State { get; private set; }
     public GameObject ViewObject { get; private set; }
@@ -85,11 +90,55 @@ public sealed class HeroRuntimeData
         return IsEquipmentSlotIndexValid(slotIndex) ? _equippedItems[slotIndex] : null;
     }
 
+    public static ItemGroup GetAllowedItemGroupForSlot(int slotIndex)
+    {
+        switch (slotIndex)
+        {
+            case WeaponSlotIndex:
+                return ItemGroup.Weapon;
+            case ArmorSlotIndex:
+                return ItemGroup.Armor;
+            default:
+                return ItemGroup.None;
+        }
+    }
+
+    public static string GetEquipmentSlotDisplayName(int slotIndex)
+    {
+        switch (slotIndex)
+        {
+            case WeaponSlotIndex:
+                return "Оружие";
+            case ArmorSlotIndex:
+                return "Броня";
+            case ReservedSlotIndex:
+                return "Резерв";
+            default:
+                return $"Слот {slotIndex + 1}";
+        }
+    }
+
+    public static bool CanEquipItemInSlot(int slotIndex, ItemRuntimeData item)
+    {
+        return item != null && CanEquipDefinitionInSlot(slotIndex, item.Definition);
+    }
+
+    public static bool CanEquipDefinitionInSlot(int slotIndex, ItemDefinition definition)
+    {
+        if (!IsEquipmentSlotIndexValid(slotIndex) || definition == null)
+        {
+            return false;
+        }
+
+        ItemGroup allowedGroup = GetAllowedItemGroupForSlot(slotIndex);
+        return allowedGroup != ItemGroup.None && definition.Group == allowedGroup;
+    }
+
     public bool TryEquipItem(int slotIndex, ItemRuntimeData item, out ItemRuntimeData replacedItem)
     {
         replacedItem = null;
 
-        if (!IsEquipmentSlotIndexValid(slotIndex) || item == null)
+        if (!CanEquipItemInSlot(slotIndex, item))
         {
             return false;
         }

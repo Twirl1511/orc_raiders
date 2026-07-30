@@ -78,7 +78,7 @@ public sealed class ItemStorageSystem : MonoBehaviour
 
     public bool TryEquipItemToHero(ItemRuntimeData item, HeroRuntimeData heroData, int slotIndex)
     {
-        if (item == null || heroData == null || !_items.Remove(item))
+        if (item == null || heroData == null || !HeroRuntimeData.CanEquipItemInSlot(slotIndex, item) || !_items.Remove(item))
         {
             return false;
         }

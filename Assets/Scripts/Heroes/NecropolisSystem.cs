@@ -9,6 +9,8 @@ public sealed class NecropolisSystem : MonoBehaviour
 {
     private static readonly Color _selectedHeroOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
     private static readonly Vector2 _selectedHeroOutlinePadding = new Vector2(0.14f, 0.14f);
+    private const float _selectedHeroOutlineThickness = 0.035f;
+    private const float _minSpriteWorldSize = 0.0001f;
     private const float _heroLabelScale = 0.25f;
 
     [Header("Config")]
@@ -216,6 +218,12 @@ public sealed class NecropolisSystem : MonoBehaviour
             return false;
         }
 
+        if (!HeroRuntimeData.CanEquipItemInSlot(slotIndex, item))
+        {
+            _statusText.text = $"{item.DisplayName}: слот \"{HeroRuntimeData.GetEquipmentSlotDisplayName(slotIndex)}\" не подходит.";
+            return false;
+        }
+
         if (!itemStorage.TryEquipItemToHero(item, heroData, slotIndex))
         {
             return false;
@@ -290,6 +298,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
 
         heroData.SetMaxHp(CalculateHeroMaxHp(heroData), false);
+        RefreshHeroEquipmentVisual(heroData);
         RefreshHeroHealthBar(heroData);
         _raidSystem.RefreshHeroCombatStats(heroData);
 
@@ -610,7 +619,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         stats.ClampAfterCreation(_config.StatsConfig);
 
         float maxHp = CalculateBaseHeroMaxHp(stats);
-        HeroRuntimeData heroData = new HeroRuntimeData($"Герой {_nextHeroId}", stats, rollTexts, maxHp);
+        HeroRuntimeData heroData = new HeroRuntimeData($"Герой {_nextHeroId}", stats, rollTexts, maxHp, _config.HeroBaseSprite);
         SpawnHero(heroData);
 
         _nextHeroId++;
@@ -627,15 +636,32 @@ public sealed class NecropolisSystem : MonoBehaviour
         heroObject.transform.SetParent(transform, false);
         heroObject.transform.localScale = Vector3.one;
 
-        GameObject spriteObject = new GameObject("Sprite");
-        spriteObject.transform.SetParent(heroObject.transform, false);
-
-        SpriteRenderer renderer = spriteObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = _whiteSprite;
-        renderer.drawMode = SpriteDrawMode.Sliced;
-        renderer.size = visualSize;
-        renderer.color = _config.HeroVisualColor;
-        renderer.sortingOrder = _config.HeroSpriteSortingOrder;
+        Sprite baseSprite = heroData.BaseSprite != null ? heroData.BaseSprite : _whiteSprite;
+        Color baseColor = heroData.BaseSprite != null ? Color.white : _config.HeroVisualColor;
+        SpriteRenderer baseRenderer = CreateHeroLayerRenderer(
+            "Base Skeleton",
+            heroObject.transform,
+            baseSprite,
+            visualSize,
+            _config.HeroSpriteSortingOrder,
+            baseColor);
+        SpriteRenderer headRenderer = CreateHeroLayerRenderer(
+            "Head",
+            heroObject.transform,
+            _config.HeroHeadSprite,
+            visualSize,
+            _config.HeroSpriteSortingOrder + 4,
+            Color.white);
+        headRenderer.enabled = false;
+        SpriteRenderer[] equipmentRenderers = CreateHeroEquipmentOverlayRenderers(heroObject.transform, visualSize);
+        SpriteRenderer frontEquipmentRenderer = CreateHeroLayerRenderer(
+            "Equipment Front Overlay",
+            heroObject.transform,
+            null,
+            visualSize,
+            _config.HeroSpriteSortingOrder + 5,
+            Color.white);
+        frontEquipmentRenderer.enabled = false;
 
         GameObject colliderObject = new GameObject("Collider");
         colliderObject.transform.SetParent(heroObject.transform, false);
@@ -652,7 +678,9 @@ public sealed class NecropolisSystem : MonoBehaviour
         _heroDataByObject.Add(colliderObject, heroData);
         _selectionOutlineByHero.Add(heroData, selectionOutline);
         _healthBarByHero.Add(heroData, healthBar);
-        _mapVisualByHero.Add(heroData, new HeroMapVisual(renderer, collider, selectionOutline.GetComponent<SpriteRenderer>(), label, healthBar));
+        HeroMapVisual mapVisual = new HeroMapVisual(baseRenderer, headRenderer, equipmentRenderers, frontEquipmentRenderer, collider, selectionOutline, label, healthBar, visualSize);
+        _mapVisualByHero.Add(heroData, mapVisual);
+        mapVisual.RefreshEquipment(heroData);
         RefreshHeroVisualStates();
     }
 
@@ -748,15 +776,58 @@ public sealed class NecropolisSystem : MonoBehaviour
         GameObject outlineObject = new GameObject("Selection Outline");
         outlineObject.transform.SetParent(parent, false);
 
-        SpriteRenderer renderer = outlineObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = _whiteSprite;
-        renderer.drawMode = SpriteDrawMode.Sliced;
-        renderer.size = visualSize + _selectedHeroOutlinePadding;
-        renderer.color = _selectedHeroOutlineColor;
-        renderer.sortingOrder = _config.HeroSpriteSortingOrder - 1;
+        CreateHeroSelectionOutlineEdge(outlineObject.transform, "Top");
+        CreateHeroSelectionOutlineEdge(outlineObject.transform, "Bottom");
+        CreateHeroSelectionOutlineEdge(outlineObject.transform, "Left");
+        CreateHeroSelectionOutlineEdge(outlineObject.transform, "Right");
+        SetHeroSelectionOutlineSize(outlineObject, visualSize, _selectedHeroOutlinePadding);
 
         outlineObject.SetActive(false);
         return outlineObject;
+    }
+
+    private SpriteRenderer CreateHeroSelectionOutlineEdge(Transform parent, string name)
+    {
+        GameObject edgeObject = new GameObject(name);
+        edgeObject.transform.SetParent(parent, false);
+
+        SpriteRenderer renderer = edgeObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = _whiteSprite;
+        renderer.drawMode = SpriteDrawMode.Sliced;
+        renderer.color = _selectedHeroOutlineColor;
+        renderer.sortingOrder = _config.HeroSpriteSortingOrder - 1;
+        return renderer;
+    }
+
+    private static void SetHeroSelectionOutlineSize(GameObject outlineObject, Vector2 visualSize, Vector2 outlinePadding)
+    {
+        if (outlineObject == null)
+        {
+            return;
+        }
+
+        Vector2 outlineSize = visualSize + outlinePadding;
+        float thickness = Mathf.Min(_selectedHeroOutlineThickness, outlineSize.x * 0.35f, outlineSize.y * 0.35f);
+
+        SetHeroSelectionOutlineEdge(outlineObject.transform.Find("Top"), new Vector2(outlineSize.x, thickness), new Vector2(0f, outlineSize.y * 0.5f - thickness * 0.5f));
+        SetHeroSelectionOutlineEdge(outlineObject.transform.Find("Bottom"), new Vector2(outlineSize.x, thickness), new Vector2(0f, -outlineSize.y * 0.5f + thickness * 0.5f));
+        SetHeroSelectionOutlineEdge(outlineObject.transform.Find("Left"), new Vector2(thickness, outlineSize.y), new Vector2(-outlineSize.x * 0.5f + thickness * 0.5f, 0f));
+        SetHeroSelectionOutlineEdge(outlineObject.transform.Find("Right"), new Vector2(thickness, outlineSize.y), new Vector2(outlineSize.x * 0.5f - thickness * 0.5f, 0f));
+    }
+
+    private static void SetHeroSelectionOutlineEdge(Transform edgeTransform, Vector2 size, Vector2 localPosition)
+    {
+        if (edgeTransform == null)
+        {
+            return;
+        }
+
+        edgeTransform.localPosition = localPosition;
+
+        if (edgeTransform.TryGetComponent(out SpriteRenderer renderer))
+        {
+            renderer.size = size;
+        }
     }
 
     private HeroMapHealthBar CreateHeroHealthBar(Transform parent, Vector2 visualSize)
@@ -791,6 +862,101 @@ public sealed class NecropolisSystem : MonoBehaviour
         return new HeroMapHealthBar(rootObject, background, fill, barSize);
     }
 
+    private SpriteRenderer[] CreateHeroEquipmentOverlayRenderers(Transform parent, Vector2 visualSize)
+    {
+        SpriteRenderer[] renderers = new SpriteRenderer[HeroRuntimeData.EquipmentSlotCount];
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            int sortingOrder = _config.HeroSpriteSortingOrder + 1 + i;
+            SpriteRenderer renderer = CreateHeroLayerRenderer(
+                $"Equipment Overlay {i + 1}",
+                parent,
+                null,
+                visualSize,
+                sortingOrder,
+                Color.white);
+            renderer.enabled = false;
+            renderers[i] = renderer;
+        }
+
+        return renderers;
+    }
+
+    private static SpriteRenderer CreateHeroLayerRenderer(
+        string name,
+        Transform parent,
+        Sprite sprite,
+        Vector2 visualSize,
+        int sortingOrder,
+        Color color)
+    {
+        GameObject layerObject = new GameObject(name);
+        layerObject.transform.SetParent(parent, false);
+
+        SpriteRenderer renderer = layerObject.AddComponent<SpriteRenderer>();
+        SetHeroLayerSprite(renderer, sprite, visualSize, color);
+        renderer.sortingOrder = sortingOrder;
+        return renderer;
+    }
+
+    private static void SetHeroLayerSprite(SpriteRenderer renderer, Sprite sprite, Vector2 visualSize, Color color)
+    {
+        SetHeroLayerSprite(renderer, sprite, visualSize, color, Vector2.zero, Vector2.one, 0f);
+    }
+
+    private static void SetHeroLayerSprite(
+        SpriteRenderer renderer,
+        Sprite sprite,
+        Vector2 visualSize,
+        Color color,
+        Vector2 offset,
+        Vector2 scaleMultiplier,
+        float rotationDegrees)
+    {
+        if (renderer == null)
+        {
+            return;
+        }
+
+        renderer.sprite = sprite;
+        renderer.drawMode = SpriteDrawMode.Simple;
+        renderer.color = color;
+        renderer.enabled = sprite != null;
+        ApplyHeroLayerTransform(renderer, visualSize, offset, scaleMultiplier, rotationDegrees);
+    }
+
+    private static void ApplyHeroLayerTransform(
+        SpriteRenderer renderer,
+        Vector2 visualSize,
+        Vector2 offset,
+        Vector2 scaleMultiplier,
+        float rotationDegrees)
+    {
+        if (renderer == null)
+        {
+            return;
+        }
+
+        Sprite sprite = renderer.sprite;
+
+        if (sprite == null)
+        {
+            renderer.transform.localPosition = Vector3.zero;
+            renderer.transform.localRotation = Quaternion.identity;
+            renderer.transform.localScale = Vector3.one;
+            return;
+        }
+
+        float pixelsPerUnit = Mathf.Max(_minSpriteWorldSize, sprite.pixelsPerUnit);
+        Vector2 spriteWorldSize = new Vector2(sprite.rect.width / pixelsPerUnit, sprite.rect.height / pixelsPerUnit);
+        float scaleX = spriteWorldSize.x > _minSpriteWorldSize ? visualSize.x / spriteWorldSize.x : 1f;
+        float scaleY = spriteWorldSize.y > _minSpriteWorldSize ? visualSize.y / spriteWorldSize.y : 1f;
+        renderer.transform.localPosition = new Vector3(offset.x * visualSize.x, offset.y * visualSize.y, 0f);
+        renderer.transform.localRotation = Quaternion.Euler(0f, 0f, rotationDegrees);
+        renderer.transform.localScale = new Vector3(scaleX * scaleMultiplier.x, scaleY * scaleMultiplier.y, 1f);
+    }
+
     private void RefreshHeroMapVisualSize(HeroRuntimeData heroData)
     {
         if (heroData == null || !_mapVisualByHero.TryGetValue(heroData, out HeroMapVisual mapVisual))
@@ -799,6 +965,15 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
 
         mapVisual.SetSize(_config.GetHeroVisualSizeForLevel(heroData.Level), _selectedHeroOutlinePadding);
+        mapVisual.RefreshEquipment(heroData);
+    }
+
+    private void RefreshHeroEquipmentVisual(HeroRuntimeData heroData)
+    {
+        if (heroData != null && _mapVisualByHero.TryGetValue(heroData, out HeroMapVisual mapVisual))
+        {
+            mapVisual.RefreshEquipment(heroData);
+        }
     }
 
     private static Vector2 GetHeroLabelRectSize(Vector2 visualSize)
@@ -1009,31 +1184,66 @@ public sealed class NecropolisSystem : MonoBehaviour
 
     private sealed class HeroMapVisual
     {
-        private readonly SpriteRenderer _spriteRenderer;
+        private readonly SpriteRenderer _baseRenderer;
+        private readonly SpriteRenderer _headRenderer;
+        private readonly SpriteRenderer[] _equipmentRenderers;
+        private readonly SpriteRenderer _frontEquipmentRenderer;
         private readonly BoxCollider2D _collider;
-        private readonly SpriteRenderer _selectionOutline;
+        private readonly GameObject _selectionOutline;
         private readonly TextMeshPro _label;
         private readonly HeroMapHealthBar _healthBar;
+        private Vector2 _visualSize;
 
         public HeroMapVisual(
-            SpriteRenderer spriteRenderer,
+            SpriteRenderer baseRenderer,
+            SpriteRenderer headRenderer,
+            SpriteRenderer[] equipmentRenderers,
+            SpriteRenderer frontEquipmentRenderer,
             BoxCollider2D collider,
-            SpriteRenderer selectionOutline,
+            GameObject selectionOutline,
             TextMeshPro label,
-            HeroMapHealthBar healthBar)
+            HeroMapHealthBar healthBar,
+            Vector2 visualSize)
         {
-            _spriteRenderer = spriteRenderer;
+            _baseRenderer = baseRenderer;
+            _headRenderer = headRenderer;
+            _equipmentRenderers = equipmentRenderers;
+            _frontEquipmentRenderer = frontEquipmentRenderer;
             _collider = collider;
             _selectionOutline = selectionOutline;
             _label = label;
             _healthBar = healthBar;
+            _visualSize = visualSize;
         }
 
         public void SetSize(Vector2 visualSize, Vector2 outlinePadding)
         {
-            if (_spriteRenderer != null)
+            _visualSize = visualSize;
+
+            if (_baseRenderer != null)
             {
-                _spriteRenderer.size = visualSize;
+                ApplyHeroLayerTransform(_baseRenderer, visualSize, Vector2.zero, Vector2.one, 0f);
+            }
+
+            if (_headRenderer != null)
+            {
+                ApplyHeroLayerTransform(_headRenderer, visualSize, Vector2.zero, Vector2.one, 0f);
+            }
+
+            if (_equipmentRenderers != null)
+            {
+                for (int i = 0; i < _equipmentRenderers.Length; i++)
+                {
+                    if (_equipmentRenderers[i] != null)
+                    {
+                        ApplyHeroLayerTransform(_equipmentRenderers[i], visualSize, Vector2.zero, Vector2.one, 0f);
+                    }
+                }
+            }
+
+            if (_frontEquipmentRenderer != null)
+            {
+                ApplyHeroLayerTransform(_frontEquipmentRenderer, visualSize, Vector2.zero, Vector2.one, 0f);
             }
 
             if (_collider != null)
@@ -1041,10 +1251,7 @@ public sealed class NecropolisSystem : MonoBehaviour
                 _collider.size = visualSize;
             }
 
-            if (_selectionOutline != null)
-            {
-                _selectionOutline.size = visualSize + outlinePadding;
-            }
+            SetHeroSelectionOutlineSize(_selectionOutline, visualSize, outlinePadding);
 
             if (_label != null)
             {
@@ -1052,6 +1259,119 @@ public sealed class NecropolisSystem : MonoBehaviour
             }
 
             _healthBar?.SetSize(GetHeroHealthBarSize(visualSize), GetHeroHealthBarPosition(visualSize));
+        }
+
+        public void RefreshEquipment(HeroRuntimeData heroData)
+        {
+            if (_equipmentRenderers == null)
+            {
+                return;
+            }
+
+            int rendererIndex = 0;
+            bool hasVisibleArmor = HasVisibleEquippedArmor(heroData);
+            AssignEquippedSprites(heroData, ItemGroup.Armor, ref rendererIndex);
+            AssignEquippedSprites(heroData, ItemGroup.Weapon, ref rendererIndex);
+
+            for (int i = rendererIndex; i < _equipmentRenderers.Length; i++)
+            {
+                SetEquipmentRenderer(i, null);
+            }
+
+            SetFrontEquipmentRenderer(GetFrontOverlayDefinition(heroData));
+            SetArmorBodyMode(hasVisibleArmor);
+        }
+
+        private static bool HasVisibleEquippedArmor(HeroRuntimeData heroData)
+        {
+            ItemRuntimeData armorItem = heroData != null ? heroData.GetEquippedItem(HeroRuntimeData.ArmorSlotIndex) : null;
+            ItemDefinition definition = armorItem != null ? armorItem.Definition : null;
+            return definition != null && definition.Group == ItemGroup.Armor && definition.HeroOverlaySprite != null;
+        }
+
+        private void SetArmorBodyMode(bool hasVisibleArmor)
+        {
+            if (_baseRenderer != null)
+            {
+                _baseRenderer.enabled = !hasVisibleArmor && _baseRenderer.sprite != null;
+            }
+
+            if (_headRenderer != null)
+            {
+                _headRenderer.enabled = hasVisibleArmor && _headRenderer.sprite != null;
+            }
+        }
+
+        private void AssignEquippedSprites(HeroRuntimeData heroData, ItemGroup group, ref int rendererIndex)
+        {
+            if (heroData == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount && rendererIndex < _equipmentRenderers.Length; i++)
+            {
+                ItemRuntimeData item = heroData.GetEquippedItem(i);
+                ItemDefinition definition = item != null ? item.Definition : null;
+
+                if (definition == null || definition.Group != group || definition.HeroOverlaySprite == null)
+                {
+                    continue;
+                }
+
+                SetEquipmentRenderer(rendererIndex, definition);
+                rendererIndex++;
+            }
+        }
+
+        private static ItemDefinition GetFrontOverlayDefinition(HeroRuntimeData heroData)
+        {
+            if (heroData == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount; i++)
+            {
+                ItemRuntimeData item = heroData.GetEquippedItem(i);
+                ItemDefinition definition = item != null ? item.Definition : null;
+
+                if (definition != null && definition.HeroFrontOverlaySprite != null)
+                {
+                    return definition;
+                }
+            }
+
+            return null;
+        }
+
+        private void SetEquipmentRenderer(int rendererIndex, ItemDefinition definition)
+        {
+            if (rendererIndex < 0 || rendererIndex >= _equipmentRenderers.Length || _equipmentRenderers[rendererIndex] == null)
+            {
+                return;
+            }
+
+            SpriteRenderer renderer = _equipmentRenderers[rendererIndex];
+            Sprite sprite = definition != null ? definition.HeroOverlaySprite : null;
+            Vector2 offset = definition != null ? definition.HeroOverlayOffset : Vector2.zero;
+            Vector2 scale = definition != null ? definition.HeroOverlayScale : Vector2.one;
+            float rotation = definition != null ? definition.HeroOverlayRotationDegrees : 0f;
+            SetHeroLayerSprite(renderer, sprite, _visualSize, Color.white, offset, scale, rotation);
+        }
+
+        private void SetFrontEquipmentRenderer(ItemDefinition definition)
+        {
+            if (_frontEquipmentRenderer == null)
+            {
+                return;
+            }
+
+            Sprite sprite = definition != null ? definition.HeroFrontOverlaySprite : null;
+            Vector2 offset = definition != null ? definition.HeroFrontOverlayOffset : Vector2.zero;
+            Vector2 scale = definition != null ? definition.HeroFrontOverlayScale : Vector2.one;
+            float rotation = definition != null ? definition.HeroFrontOverlayRotationDegrees : 0f;
+            SetHeroLayerSprite(_frontEquipmentRenderer, sprite, _visualSize, Color.white, offset, scale, rotation);
         }
     }
 

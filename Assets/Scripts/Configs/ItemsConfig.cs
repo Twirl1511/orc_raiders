@@ -103,6 +103,14 @@ public sealed class ItemDefinition
     [SerializeField, TextArea] private string _description = "";
     [SerializeField] private ItemGroup _group = ItemGroup.Weapon;
     [SerializeField] private Sprite _icon = null;
+    [SerializeField] private Sprite _heroOverlaySprite = null;
+    [SerializeField] private Vector2 _heroOverlayOffset = Vector2.zero;
+    [SerializeField] private Vector2 _heroOverlayScale = Vector2.one;
+    [SerializeField] private float _heroOverlayRotationDegrees = 0f;
+    [SerializeField] private Sprite _heroFrontOverlaySprite = null;
+    [SerializeField] private Vector2 _heroFrontOverlayOffset = Vector2.zero;
+    [SerializeField] private Vector2 _heroFrontOverlayScale = Vector2.one;
+    [SerializeField] private float _heroFrontOverlayRotationDegrees = 0f;
     [SerializeField] private List<ItemStatModifier> _statModifiers = new List<ItemStatModifier>();
 
     public string Id => string.IsNullOrWhiteSpace(_id) ? "" : _id.Trim();
@@ -110,6 +118,14 @@ public sealed class ItemDefinition
     public string Description => _description;
     public ItemGroup Group => _group;
     public Sprite Icon => _icon;
+    public Sprite HeroOverlaySprite => _heroOverlaySprite;
+    public Vector2 HeroOverlayOffset => _heroOverlayOffset;
+    public Vector2 HeroOverlayScale => new Vector2(Mathf.Max(0.01f, _heroOverlayScale.x), Mathf.Max(0.01f, _heroOverlayScale.y));
+    public float HeroOverlayRotationDegrees => _heroOverlayRotationDegrees;
+    public Sprite HeroFrontOverlaySprite => _heroFrontOverlaySprite;
+    public Vector2 HeroFrontOverlayOffset => _heroFrontOverlayOffset;
+    public Vector2 HeroFrontOverlayScale => new Vector2(Mathf.Max(0.01f, _heroFrontOverlayScale.x), Mathf.Max(0.01f, _heroFrontOverlayScale.y));
+    public float HeroFrontOverlayRotationDegrees => _heroFrontOverlayRotationDegrees;
     public IReadOnlyList<ItemStatModifier> StatModifiers => _statModifiers;
 
     public bool IsEquippable => _group == ItemGroup.Weapon || _group == ItemGroup.Armor;
@@ -134,6 +150,11 @@ public sealed class ItemDefinition
         if (_icon == null)
         {
             Debug.LogWarning($"{nameof(ItemsConfig)} {itemLabel} has no icon sprite.", context);
+        }
+
+        if (_heroOverlaySprite == null)
+        {
+            Debug.LogWarning($"{nameof(ItemsConfig)} {itemLabel} has no hero overlay sprite.", context);
         }
 
         if (_statModifiers.Count == 0)

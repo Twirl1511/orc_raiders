@@ -15,6 +15,8 @@ public sealed class NecropolisConfig : ScriptableObject
     [SerializeField] private LevelUpConfig _levelUpConfig = null;
 
     [Header("Hero")]
+    [SerializeField] private Sprite _heroBaseSprite = null;
+    [SerializeField] private Sprite _heroHeadSprite = null;
     [SerializeField] private Vector2 _heroVisualSize = new Vector2(0.65f, 0.65f);
     [SerializeField] private Color _heroVisualColor = new Color(0.45f, 0.75f, 0.4f, 1f);
     [SerializeField] private int _heroSpriteSortingOrder = 20;
@@ -33,6 +35,8 @@ public sealed class NecropolisConfig : ScriptableObject
     public StatsConfig StatsConfig => _statsConfig;
     public RestConfig RestConfig => _restConfig;
     public LevelUpConfig LevelUpConfig => _levelUpConfig;
+    public Sprite HeroBaseSprite => _heroBaseSprite;
+    public Sprite HeroHeadSprite => _heroHeadSprite;
     public Vector2 HeroVisualSize => new Vector2(Mathf.Max(0.01f, _heroVisualSize.x), Mathf.Max(0.01f, _heroVisualSize.y));
     public Color HeroVisualColor => _heroVisualColor;
     public int HeroSpriteSortingOrder => _heroSpriteSortingOrder;

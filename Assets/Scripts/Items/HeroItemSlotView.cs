@@ -106,7 +106,7 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
 
         if (_label != null)
         {
-            _label.text = definition != null ? definition.DisplayName : $"Слот {_slotIndex + 1}";
+            _label.text = definition != null ? definition.DisplayName : HeroRuntimeData.GetEquipmentSlotDisplayName(_slotIndex);
             _label.enableAutoSizing = true;
             _label.fontSizeMin = 6f;
             _label.fontSizeMax = 11f;
