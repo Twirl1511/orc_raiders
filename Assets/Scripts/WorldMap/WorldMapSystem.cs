@@ -3,32 +3,32 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public sealed class HumanVillageSystem : MonoBehaviour
+public sealed class WorldMapSystem : MonoBehaviour
 {
     [Header("Configs")]
-    [SerializeField] private HumanVillageConfig _config = null;
+    [SerializeField] private WorldMapConfig _config = null;
     [SerializeField] private EnemyConfig _enemyConfig = null;
 
     [Header("Scene References")]
-    [SerializeField] private NecropolisSystem _necropolisSystem = null;
+    [SerializeField] private GuildSystem _guildSystem = null;
     [SerializeField] private Canvas _canvas = null;
-    [SerializeField] private RectTransform _scoutDropSlot = null;
+    [SerializeField] private RectTransform _investigationDropSlot = null;
     [SerializeField] private TextMeshProUGUI _titleText = null;
     [SerializeField] private TextMeshProUGUI _statusText = null;
-    [SerializeField] private TextMeshProUGUI _scoutSlotText = null;
-    [SerializeField] private Image _scoutProgressFill = null;
-    [SerializeField] private ScoutingBlockDividerView _scoutBlockDividerView = null;
+    [SerializeField] private TextMeshProUGUI _investigationSlotText = null;
+    [SerializeField] private Image _investigationProgressFill = null;
+    [SerializeField] private InvestigationBlockDividerView _investigationBlockDividerView = null;
     [SerializeField] private Image _attackReadinessFill = null;
     [SerializeField] private Image[] _enemySlotBackgrounds = new Image[0];
     [SerializeField] private TextMeshProUGUI[] _enemySlotLabels = new TextMeshProUGUI[0];
 
     private readonly List<EnemyType> _roster = new List<EnemyType>();
     private readonly HashSet<int> _revealedRosterSlots = new HashSet<int>();
-    private HeroRuntimeData _scoutingHero;
-    private float _scoutTimer;
-    private float _currentScoutingSeconds;
-    private int _completedScoutingBlocks;
-    private int _currentScoutingBlockCount = 1;
+    private HeroRuntimeData _investigationHero;
+    private float _investigationTimer;
+    private float _currentInvestigationSeconds;
+    private int _completedInvestigationBlocks;
+    private int _currentInvestigationBlockCount = 1;
     private float _attackReadinessPercent;
     private bool _attackReadyAnnounced;
     private bool _initialized;
@@ -55,21 +55,21 @@ public sealed class HumanVillageSystem : MonoBehaviour
         float deltaTime = Time.deltaTime;
         UpdateAttackReadiness(deltaTime);
 
-        if (_scoutingHero == null)
+        if (_investigationHero == null)
         {
             return;
         }
 
-        _scoutTimer = Mathf.Min(_scoutTimer + deltaTime, _currentScoutingSeconds);
-        ProcessCompletedScoutingBlocks();
+        _investigationTimer = Mathf.Min(_investigationTimer + deltaTime, _currentInvestigationSeconds);
+        ProcessCompletedInvestigationBlocks();
 
-        if (_scoutTimer >= _currentScoutingSeconds)
+        if (_investigationTimer >= _currentInvestigationSeconds)
         {
-            FinishScouting();
+            FinishInvestigation();
             return;
         }
 
-        RefreshScoutSlot();
+        RefreshInvestigationSlot();
     }
 
     public bool TryAcceptDroppedHero(HeroRuntimeData heroData, Vector2 screenPosition)
@@ -79,25 +79,25 @@ public sealed class HumanVillageSystem : MonoBehaviour
             Initialize();
         }
 
-        if (heroData == null || _scoutDropSlot == null ||
-            !RectTransformUtility.RectangleContainsScreenPoint(_scoutDropSlot, screenPosition, UiCamera))
+        if (heroData == null || _investigationDropSlot == null ||
+            !RectTransformUtility.RectangleContainsScreenPoint(_investigationDropSlot, screenPosition, UiCamera))
         {
             return false;
         }
 
-        if (_scoutingHero != null)
+        if (_investigationHero != null)
         {
-            ReturnRejectedHeroToBase(heroData, "Разведка уже идет.");
+            ReturnRejectedHeroToBase(heroData, "Исследование уже идет.");
             return true;
         }
 
         if (!HasHiddenRosterSlot())
         {
-            ReturnRejectedHeroToBase(heroData, "Ростер деревни уже раскрыт.");
+            ReturnRejectedHeroToBase(heroData, "Ростер карты уже раскрыт.");
             return true;
         }
 
-        StartScouting(heroData);
+        StartInvestigation(heroData);
         return true;
     }
 
@@ -110,7 +110,7 @@ public sealed class HumanVillageSystem : MonoBehaviour
 
         ValidateReferences();
         _initialized = true;
-        RollVillageRoster();
+        RollMapRoster();
         RefreshUi();
     }
 
@@ -118,30 +118,30 @@ public sealed class HumanVillageSystem : MonoBehaviour
     {
         if (_config == null || !_config.ValidateForRuntime(_enemyConfig, this))
         {
-            throw new System.InvalidOperationException($"{nameof(HumanVillageSystem)} requires valid {nameof(HumanVillageConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(WorldMapSystem)} requires valid {nameof(WorldMapConfig)}.");
         }
 
         if (_enemyConfig == null || !_enemyConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(HumanVillageSystem)} requires valid {nameof(EnemyConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(WorldMapSystem)} requires valid {nameof(EnemyConfig)}.");
         }
 
-        if (_necropolisSystem == null || _canvas == null || _scoutDropSlot == null ||
-            _titleText == null || _statusText == null || _scoutSlotText == null ||
-            _scoutProgressFill == null || _scoutBlockDividerView == null || _attackReadinessFill == null)
+        if (_guildSystem == null || _canvas == null || _investigationDropSlot == null ||
+            _titleText == null || _statusText == null || _investigationSlotText == null ||
+            _investigationProgressFill == null || _investigationBlockDividerView == null || _attackReadinessFill == null)
         {
-            throw new System.InvalidOperationException($"{nameof(HumanVillageSystem)} requires scene UI references.");
+            throw new System.InvalidOperationException($"{nameof(WorldMapSystem)} requires scene UI references.");
         }
 
         if (_enemySlotBackgrounds == null || _enemySlotLabels == null ||
             _enemySlotBackgrounds.Length == 0 || _enemySlotLabels.Length == 0 ||
             _enemySlotBackgrounds.Length != _enemySlotLabels.Length)
         {
-            throw new System.InvalidOperationException($"{nameof(HumanVillageSystem)} requires matching enemy slot backgrounds and labels.");
+            throw new System.InvalidOperationException($"{nameof(WorldMapSystem)} requires matching enemy slot backgrounds and labels.");
         }
     }
 
-    private void RollVillageRoster()
+    private void RollMapRoster()
     {
         _roster.Clear();
         _revealedRosterSlots.Clear();
@@ -155,74 +155,74 @@ public sealed class HumanVillageSystem : MonoBehaviour
         }
     }
 
-    private void StartScouting(HeroRuntimeData heroData)
+    private void StartInvestigation(HeroRuntimeData heroData)
     {
-        _scoutingHero = heroData;
-        _scoutTimer = 0f;
-        _currentScoutingSeconds = _config.GetScoutingSeconds(heroData.Stats);
-        _completedScoutingBlocks = 0;
-        _currentScoutingBlockCount = _config.ScoutingBlockCount;
-        _necropolisSystem.SetHeroState(heroData, HeroActivityState.InRaid);
-        float firstBlockChance = _config.GetScoutingBlockSuccessChancePercent(heroData, 0);
-        _statusText.text = $"{heroData.Name} изучает деревню. Блок 1/{_currentScoutingBlockCount}, шанс: {firstBlockChance:0}%.";
+        _investigationHero = heroData;
+        _investigationTimer = 0f;
+        _currentInvestigationSeconds = _config.GetInvestigationSeconds(heroData.Stats);
+        _completedInvestigationBlocks = 0;
+        _currentInvestigationBlockCount = _config.InvestigationBlockCount;
+        _guildSystem.SetHeroState(heroData, HeroActivityState.InQuest);
+        float firstBlockChance = _config.GetInvestigationBlockSuccessChancePercent(heroData, 0);
+        _statusText.text = $"{heroData.Name} изучает карту. Блок 1/{_currentInvestigationBlockCount}, шанс: {firstBlockChance:0}%.";
         RefreshUi();
     }
 
-    private void ProcessCompletedScoutingBlocks()
+    private void ProcessCompletedInvestigationBlocks()
     {
-        while (_completedScoutingBlocks < _currentScoutingBlockCount)
+        while (_completedInvestigationBlocks < _currentInvestigationBlockCount)
         {
-            float blockEndTime = _currentScoutingSeconds * (_completedScoutingBlocks + 1) / _currentScoutingBlockCount;
-            if (_scoutTimer + Mathf.Epsilon < blockEndTime)
+            float blockEndTime = _currentInvestigationSeconds * (_completedInvestigationBlocks + 1) / _currentInvestigationBlockCount;
+            if (_investigationTimer + Mathf.Epsilon < blockEndTime)
             {
                 break;
             }
 
-            ResolveScoutingBlock(_completedScoutingBlocks);
-            _completedScoutingBlocks++;
+            ResolveInvestigationBlock(_completedInvestigationBlocks);
+            _completedInvestigationBlocks++;
 
             if (!HasHiddenRosterSlot())
             {
-                _scoutTimer = _currentScoutingSeconds;
+                _investigationTimer = _currentInvestigationSeconds;
                 break;
             }
         }
     }
 
-    private void ResolveScoutingBlock(int blockIndex)
+    private void ResolveInvestigationBlock(int blockIndex)
     {
-        float successChance = _config.GetScoutingBlockSuccessChancePercent(_scoutingHero, blockIndex);
-        bool scoutingSucceeded = IsScoutingSuccessful(successChance);
-        string blockLabel = $"{blockIndex + 1}/{_currentScoutingBlockCount}";
+        float successChance = _config.GetInvestigationBlockSuccessChancePercent(_investigationHero, blockIndex);
+        bool investigationSucceeded = IsInvestigationSuccessful(successChance);
+        string blockLabel = $"{blockIndex + 1}/{_currentInvestigationBlockCount}";
 
-        if (scoutingSucceeded)
+        if (investigationSucceeded)
         {
             int revealedIndex = RevealRandomHiddenRosterSlot();
 
             if (revealedIndex >= 0)
             {
                 EnemyType revealedEnemyType = _roster[revealedIndex];
-                int experienceReward = AwardScoutingExperienceForRevealedEnemy(_scoutingHero, revealedEnemyType);
+                int experienceReward = AwardInvestigationExperienceForRevealedEnemy(_investigationHero, revealedEnemyType);
                 string experienceSuffix = experienceReward > 0 ? $" +{experienceReward} опыта." : string.Empty;
                 string allRevealedSuffix = HasHiddenRosterSlot() ? string.Empty : " Ростер полностью раскрыт.";
-                _statusText.text = $"Разведка {blockLabel} раскрыла: {GetEnemyDisplayName(revealedEnemyType)}.{experienceSuffix}{allRevealedSuffix}";
+                _statusText.text = $"Исследование {blockLabel} раскрыла: {GetEnemyDisplayName(revealedEnemyType)}.{experienceSuffix}{allRevealedSuffix}";
                 AppendNextBlockChance(blockIndex);
                 RefreshEnemySlots();
                 return;
             }
 
-            _statusText.text = $"Разведка {blockLabel}: новых целей нет.";
+            _statusText.text = $"Исследование {blockLabel}: новых целей нет.";
             AppendNextBlockChance(blockIndex);
             return;
         }
 
-        AddAttackReadiness(_config.ScoutingFailureAttackReadinessPercent);
-        _statusText.text = $"Разведка {blockLabel} провалена. Готовность деревни +{_config.ScoutingFailureAttackReadinessPercent:0}%.";
+        AddAttackReadiness(_config.InvestigationFailureAttackReadinessPercent);
+        _statusText.text = $"Исследование {blockLabel} провалена. Готовность карты +{_config.InvestigationFailureAttackReadinessPercent:0}%.";
 
         if (_attackReadinessPercent >= 100f)
         {
             _attackReadyAnnounced = true;
-            _statusText.text += " Деревня готова к нападению.";
+            _statusText.text += " Карта готова к нападению.";
         }
 
         AppendNextBlockChance(blockIndex);
@@ -231,16 +231,16 @@ public sealed class HumanVillageSystem : MonoBehaviour
     private void AppendNextBlockChance(int completedBlockIndex)
     {
         int nextBlockIndex = completedBlockIndex + 1;
-        if (nextBlockIndex >= _currentScoutingBlockCount || !HasHiddenRosterSlot())
+        if (nextBlockIndex >= _currentInvestigationBlockCount || !HasHiddenRosterSlot())
         {
             return;
         }
 
-        float nextChance = _config.GetScoutingBlockSuccessChancePercent(_scoutingHero, nextBlockIndex);
+        float nextChance = _config.GetInvestigationBlockSuccessChancePercent(_investigationHero, nextBlockIndex);
         _statusText.text += $" След. шанс: {nextChance:0}%.";
     }
 
-    private int AwardScoutingExperienceForRevealedEnemy(HeroRuntimeData heroData, EnemyType enemyType)
+    private int AwardInvestigationExperienceForRevealedEnemy(HeroRuntimeData heroData, EnemyType enemyType)
     {
         if (heroData == null || !_enemyConfig.TryGetEnemy(enemyType, out EnemyDefinition enemy))
         {
@@ -248,27 +248,27 @@ public sealed class HumanVillageSystem : MonoBehaviour
         }
 
         int experienceReward = enemy.ExperienceReward;
-        _necropolisSystem.AddExperienceToHero(heroData, experienceReward);
+        _guildSystem.AddExperienceToHero(heroData, experienceReward);
         return experienceReward;
     }
 
-    private void FinishScouting()
+    private void FinishInvestigation()
     {
-        HeroRuntimeData heroData = _scoutingHero;
-        _scoutingHero = null;
-        _scoutTimer = 0f;
-        _currentScoutingSeconds = 0f;
-        _completedScoutingBlocks = 0;
-        _currentScoutingBlockCount = 1;
+        HeroRuntimeData heroData = _investigationHero;
+        _investigationHero = null;
+        _investigationTimer = 0f;
+        _currentInvestigationSeconds = 0f;
+        _completedInvestigationBlocks = 0;
+        _currentInvestigationBlockCount = 1;
 
         if (heroData != null)
         {
-            _necropolisSystem.SetHeroState(heroData, HeroActivityState.OnBase);
+            _guildSystem.SetHeroState(heroData, HeroActivityState.OnBase);
         }
 
         if (string.IsNullOrWhiteSpace(_statusText.text))
         {
-            _statusText.text = "Разведка завершена.";
+            _statusText.text = "Исследование завершена.";
         }
 
         RefreshUi();
@@ -277,7 +277,7 @@ public sealed class HumanVillageSystem : MonoBehaviour
     private void ReturnRejectedHeroToBase(HeroRuntimeData heroData, string status)
     {
         _statusText.text = status;
-        _necropolisSystem.SetHeroState(heroData, HeroActivityState.OnBase);
+        _guildSystem.SetHeroState(heroData, HeroActivityState.OnBase);
         RefreshUi();
     }
 
@@ -310,20 +310,20 @@ public sealed class HumanVillageSystem : MonoBehaviour
 
     private void RefreshUi()
     {
-        _titleText.text = "Деревня людей";
+        _titleText.text = "Мировая карта";
 
         if (_roster.Count == 0)
         {
-            _statusText.text = "Ростер деревни не создан.";
+            _statusText.text = "Ростер карты не создан.";
         }
-        else if (_scoutingHero == null && string.IsNullOrWhiteSpace(_statusText.text))
+        else if (_investigationHero == null && string.IsNullOrWhiteSpace(_statusText.text))
         {
-            _statusText.text = "Ростер скрыт. Отправь героя в разведку.";
+            _statusText.text = "Ростер скрыт. Отправь героя в исследование.";
         }
 
         RefreshEnemySlots();
-        RefreshScoutSlot();
-        RefreshScoutBlockDividers();
+        RefreshInvestigationSlot();
+        RefreshInvestigationBlockDividers();
         RefreshAttackReadiness();
     }
 
@@ -345,27 +345,27 @@ public sealed class HumanVillageSystem : MonoBehaviour
         }
     }
 
-    private void RefreshScoutSlot()
+    private void RefreshInvestigationSlot()
     {
-        if (_scoutingHero == null)
+        if (_investigationHero == null)
         {
-            _scoutSlotText.text = HasHiddenRosterSlot()
-                ? "Разведка\nперетащи героя"
-                : "Разведка\nвсе раскрыто";
-            SetBarFill(_scoutProgressFill, 0f);
+            _investigationSlotText.text = HasHiddenRosterSlot()
+                ? "Исследование\nперетащи героя"
+                : "Исследование\nвсе раскрыто";
+            SetBarFill(_investigationProgressFill, 0f);
             return;
         }
 
-        float progress = Mathf.Clamp01(_scoutTimer / Mathf.Max(0.1f, _currentScoutingSeconds));
-        int nextBlock = Mathf.Min(_completedScoutingBlocks + 1, _currentScoutingBlockCount);
-        _scoutSlotText.text = $"Разведка\n{_scoutingHero.Name} ({nextBlock}/{_currentScoutingBlockCount})";
-        SetBarFill(_scoutProgressFill, progress);
+        float progress = Mathf.Clamp01(_investigationTimer / Mathf.Max(0.1f, _currentInvestigationSeconds));
+        int nextBlock = Mathf.Min(_completedInvestigationBlocks + 1, _currentInvestigationBlockCount);
+        _investigationSlotText.text = $"Исследование\n{_investigationHero.Name} ({nextBlock}/{_currentInvestigationBlockCount})";
+        SetBarFill(_investigationProgressFill, progress);
     }
 
-    private void RefreshScoutBlockDividers()
+    private void RefreshInvestigationBlockDividers()
     {
-        int blockCount = _scoutingHero == null ? _config.ScoutingBlockCount : _currentScoutingBlockCount;
-        _scoutBlockDividerView.SetBlockCount(blockCount);
+        int blockCount = _investigationHero == null ? _config.InvestigationBlockCount : _currentInvestigationBlockCount;
+        _investigationBlockDividerView.SetBlockCount(blockCount);
     }
 
     private void UpdateAttackReadiness(float deltaTime)
@@ -377,7 +377,7 @@ public sealed class HumanVillageSystem : MonoBehaviour
 
         float previousPercent = _attackReadinessPercent;
         _attackReadinessPercent = Mathf.Clamp(
-            _attackReadinessPercent + 100f * deltaTime / _config.SecondsUntilVillageAttack,
+            _attackReadinessPercent + 100f * deltaTime / _config.SecondsUntilMapThreat,
             0f,
             100f);
 
@@ -414,13 +414,13 @@ public sealed class HumanVillageSystem : MonoBehaviour
 
         _attackReadyAnnounced = true;
 
-        if (_scoutingHero == null)
+        if (_investigationHero == null)
         {
-            _statusText.text = "Деревня готова к нападению.";
+            _statusText.text = "Карта готова к нападению.";
         }
     }
 
-    private bool IsScoutingSuccessful(float successChance)
+    private bool IsInvestigationSuccessful(float successChance)
     {
         return Random.Range(0f, 100f) < successChance;
     }

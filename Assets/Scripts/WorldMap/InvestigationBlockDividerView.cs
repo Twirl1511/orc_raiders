@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public sealed class ScoutingBlockDividerView : Graphic
+public sealed class InvestigationBlockDividerView : Graphic
 {
     [SerializeField, Min(1)] private int _blockCount = 1;
     [SerializeField, Min(1f)] private float _dividerWidth = 2f;

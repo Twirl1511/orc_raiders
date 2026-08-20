@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Necropolis", menuName = "GAME/Necropolis")]
-public sealed class NecropolisConfig : ScriptableObject
+[CreateAssetMenu(fileName = "Guild", menuName = "GAME/Guild")]
+public sealed class GuildConfig : ScriptableObject
 {
     [Header("Dice")]
     [SerializeField, Min(1)] private int _requiredDiceCount = 6;

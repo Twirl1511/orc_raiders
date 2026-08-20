@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3f7c4e6d9a54a7d91c625cb33d7f2aa, type: 3}
-  m_Name: 4_Raids
-  m_EditorClassIdentifier: Assembly-CSharp::RaidConfig
-  _startingRaidCount: 1
-  _newRaidIntervalSeconds: 60
-  _useManualRaidSpawnButton: 1
-  _waitingRaidLifetimeSeconds: 60
+  m_Name: 4_Quests
+  m_EditorClassIdentifier: Assembly-CSharp::QuestConfig
+  _startingQuestCount: 1
+  _newQuestIntervalSeconds: 60
+  _useManualQuestSpawnButton: 1
+  _waitingQuestLifetimeSeconds: 60
   _minHeroSlots: 1
   _maxHeroSlots: 3
   _additionalHeroWindowSeconds: 4

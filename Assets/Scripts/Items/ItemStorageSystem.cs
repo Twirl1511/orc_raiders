@@ -137,7 +137,7 @@ public sealed class ItemStorageSystem : MonoBehaviour
             ItemDefinition selectedItem = candidates[randomIndex];
             candidates[randomIndex] = candidates[i];
             candidates[i] = selectedItem;
-            _items.Add(new ItemRuntimeData(_nextItemInstanceId, selectedItem));
+            _items.Add(ItemRuntimeData.CreateGenerated(_nextItemInstanceId, selectedItem, _itemsConfig));
             _nextItemInstanceId++;
         }
     }

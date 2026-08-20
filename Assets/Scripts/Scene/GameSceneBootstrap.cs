@@ -6,12 +6,12 @@ public sealed class GameSceneBootstrap : MonoBehaviour
 {
     [Header("Configs")]
     [SerializeField] private CameraConfig _cameraConfig = null;
-    [SerializeField] private NecropolisConfig _necropolisConfig = null;
+    [SerializeField] private GuildConfig _guildConfig = null;
 
     [Header("Scene References")]
     [SerializeField] private Camera _sceneCamera = null;
     [SerializeField] private EdgeCameraPan _cameraPan = null;
-    [SerializeField] private NecropolisSystem _necropolisSystem = null;
+    [SerializeField] private GuildSystem _guildSystem = null;
     [SerializeField] private EventSystem _eventSystem = null;
 
     private void Awake()
@@ -23,10 +23,10 @@ public sealed class GameSceneBootstrap : MonoBehaviour
     private void ValidateSceneReferences()
     {
         LogMissingReference(_cameraConfig, nameof(_cameraConfig));
-        LogMissingReference(_necropolisConfig, nameof(_necropolisConfig));
+        LogMissingReference(_guildConfig, nameof(_guildConfig));
         LogMissingReference(_sceneCamera, nameof(_sceneCamera));
         LogMissingReference(_cameraPan, nameof(_cameraPan));
-        LogMissingReference(_necropolisSystem, nameof(_necropolisSystem));
+        LogMissingReference(_guildSystem, nameof(_guildSystem));
         LogMissingReference(_eventSystem, nameof(_eventSystem));
 
         if (_eventSystem != null && _eventSystem.GetComponent<InputSystemUIInputModule>() == null)
@@ -42,9 +42,9 @@ public sealed class GameSceneBootstrap : MonoBehaviour
             _cameraPan.Configure(_cameraConfig);
         }
 
-        if (_necropolisSystem != null && _necropolisConfig != null && _sceneCamera != null)
+        if (_guildSystem != null && _guildConfig != null && _sceneCamera != null)
         {
-            _necropolisSystem.Configure(_necropolisConfig, _sceneCamera);
+            _guildSystem.Configure(_guildConfig, _sceneCamera);
         }
     }
 

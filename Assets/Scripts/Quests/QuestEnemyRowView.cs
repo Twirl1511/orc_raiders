@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public sealed class RaidEnemyRowView : MonoBehaviour
+public sealed class QuestEnemyRowView : MonoBehaviour
 {
     private const float _rowWidth = 208f;
 
@@ -11,9 +11,9 @@ public sealed class RaidEnemyRowView : MonoBehaviour
     private Image _hpFill;
     private Image _attackFill;
 
-    public static RaidEnemyRowView Create(RectTransform parent, int index)
+    public static QuestEnemyRowView Create(RectTransform parent, int index)
     {
-        GameObject rowObject = new GameObject($"Enemy Row {index + 1}", typeof(RectTransform), typeof(RaidEnemyRowView));
+        GameObject rowObject = new GameObject($"Enemy Row {index + 1}", typeof(RectTransform), typeof(QuestEnemyRowView));
         rowObject.transform.SetParent(parent, false);
 
         RectTransform root = (RectTransform)rowObject.transform;
@@ -23,12 +23,12 @@ public sealed class RaidEnemyRowView : MonoBehaviour
         root.anchoredPosition = new Vector2(0f, -index * 52f);
         root.sizeDelta = new Vector2(_rowWidth, 46f);
 
-        RaidEnemyRowView row = rowObject.GetComponent<RaidEnemyRowView>();
+        QuestEnemyRowView row = rowObject.GetComponent<QuestEnemyRowView>();
         row.Build(root);
         return row;
     }
 
-    public void SetData(RaidEnemyViewData data)
+    public void SetData(QuestEnemyViewData data)
     {
         _nameText.text = $"{data.Name}  {Mathf.CeilToInt(data.Hp)}/{Mathf.CeilToInt(data.MaxHp)} HP";
         SetBarFill(_hpFill, GetRatio(data.Hp, data.MaxHp));

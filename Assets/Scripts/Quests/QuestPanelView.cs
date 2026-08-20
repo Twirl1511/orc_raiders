@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class RaidPanelView : MonoBehaviour
+public sealed class QuestPanelView : MonoBehaviour
 {
     private static readonly Vector2 _fallbackPanelSize = new Vector2(440f, 390f);
     private const float _headerLeft = 16f;
@@ -17,8 +17,8 @@ public sealed class RaidPanelView : MonoBehaviour
     private const float _headerTimerWidth = 78f;
     private const float _headerMinimumStatusWidth = 80f;
 
-    private readonly List<RaidHeroRowView> _heroRows = new List<RaidHeroRowView>();
-    private readonly List<RaidEnemyRowView> _enemyRows = new List<RaidEnemyRowView>();
+    private readonly List<QuestHeroRowView> _heroRows = new List<QuestHeroRowView>();
+    private readonly List<QuestEnemyRowView> _enemyRows = new List<QuestEnemyRowView>();
 
     private RectTransform _root;
     private TextMeshProUGUI _titleText;
@@ -33,9 +33,9 @@ public sealed class RaidPanelView : MonoBehaviour
     private RectTransform _enemyRowsRoot;
     private TextMeshProUGUI _enemyAreaMessage;
     private TextMeshProUGUI _logText;
-    private TextMeshProUGUI _raidProgressText;
-    private Image _raidProgressFill;
-    private RectTransform _raidProgressBarRoot;
+    private TextMeshProUGUI _questProgressText;
+    private Image _questProgressFill;
+    private RectTransform _questProgressBarRoot;
     private Button _closeButton;
     private RectTransform _effectRoot;
     private Image _effectParticle;
@@ -87,41 +87,41 @@ public sealed class RaidPanelView : MonoBehaviour
         _root.anchoredPosition = anchoredPosition;
     }
 
-    public void ShowWaiting(int raidNumber, float remainingSeconds, int assignedHeroes, int maxHeroSlots)
+    public void ShowWaiting(int questNumber, float remainingSeconds, int assignedHeroes, int maxHeroSlots)
     {
         BuildIfNeeded();
         PrepareMinimizedContentRefresh();
-        _titleText.text = $"Рейд {raidNumber}";
+        _titleText.text = $"Квест {questNumber}";
         _statusText.text = "Исчезнет через";
         _timerText.text = FormatTimer(remainingSeconds);
         _heroNameText.text = $"Герои: {assignedHeroes}/{maxHeroSlots}";
         SetHeroSetupControlsVisible(true);
         SetBarFill(_heroHpFill, 0f);
         SetBarFill(_heroAttackFill, 0f);
-        SetRaidProgress(0, 0, 0f);
+        SetQuestProgress(0, 0, 0f);
         ClearHeroes();
         ClearEnemies();
         HideEnemyAreaMessage();
-        _logText.text = "Перетащи героя в рейд";
+        _logText.text = "Перетащи героя в квест";
         _closeButton.gameObject.SetActive(false);
         RefreshMinimizeState();
     }
 
     public void ShowRecruiting(
-        int raidNumber,
+        int questNumber,
         float remainingSeconds,
         int assignedHeroes,
         int maxHeroSlots,
-        IReadOnlyList<RaidHeroViewData> heroes)
+        IReadOnlyList<QuestHeroViewData> heroes)
     {
         BuildIfNeeded();
         PrepareMinimizedContentRefresh();
-        _titleText.text = $"Рейд {raidNumber}";
+        _titleText.text = $"Квест {questNumber}";
         _statusText.text = "Добор отряда";
         _timerText.text = FormatTimer(remainingSeconds);
         SetHeroSetupControlsVisible(false);
         SetHeroes(heroes);
-        SetRaidProgress(0, 0, 0f);
+        SetQuestProgress(0, 0, 0f);
         ClearEnemies();
         HideEnemyAreaMessage();
         _logText.text = $"Герои: {assignedHeroes}/{maxHeroSlots}\nМожно добавить героя";
@@ -130,38 +130,38 @@ public sealed class RaidPanelView : MonoBehaviour
     }
 
     public void ShowBattle(
-        int raidNumber,
+        int questNumber,
         int battleNumber,
         int battleCount,
-        IReadOnlyList<RaidHeroViewData> heroes,
+        IReadOnlyList<QuestHeroViewData> heroes,
         int killedEnemies,
         int totalEnemies,
-        float raidProgress,
+        float questProgress,
         int goldFound,
         int experienceGained,
-        IReadOnlyList<RaidEnemyViewData> enemies)
+        IReadOnlyList<QuestEnemyViewData> enemies)
     {
         BuildIfNeeded();
         PrepareMinimizedContentRefresh();
-        _titleText.text = $"Рейд {raidNumber}";
+        _titleText.text = $"Квест {questNumber}";
         _statusText.text = $"Бой {battleNumber}/{battleCount}";
         _timerText.text = "";
         SetHeroSetupControlsVisible(false);
         SetHeroes(heroes);
-        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
+        SetQuestProgress(killedEnemies, totalEnemies, questProgress);
         SetEnemies(enemies);
         HideEnemyAreaMessage();
-        SetRaidStatsLog(goldFound, experienceGained);
+        SetQuestStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
         RefreshMinimizeState();
     }
 
     public void ShowBattleTransition(
-        int raidNumber,
+        int questNumber,
         int nextBattleNumber,
         int battleCount,
-        IReadOnlyList<RaidHeroViewData> heroes,
-        float raidProgress,
+        IReadOnlyList<QuestHeroViewData> heroes,
+        float questProgress,
         int killedEnemies,
         int totalEnemies,
         bool completeAfterLoot,
@@ -170,38 +170,38 @@ public sealed class RaidPanelView : MonoBehaviour
     {
         BuildIfNeeded();
         PrepareMinimizedContentRefresh();
-        _titleText.text = $"Рейд {raidNumber}";
+        _titleText.text = $"Квест {questNumber}";
         _statusText.text = completeAfterLoot ? "Собирает лут" : $"К группе {nextBattleNumber}/{battleCount}";
         _timerText.text = "";
         SetHeroSetupControlsVisible(false);
         SetHeroes(heroes);
-        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
+        SetQuestProgress(killedEnemies, totalEnemies, questProgress);
         ClearEnemies();
         ShowEnemyAreaMessage("Собирает лут");
-        SetRaidStatsLog(goldFound, experienceGained);
+        SetQuestStatsLog(goldFound, experienceGained);
         _closeButton.gameObject.SetActive(false);
         RefreshMinimizeState();
     }
 
     public void ShowCompleted(
-        int raidNumber,
+        int questNumber,
         bool success,
         string message,
         int killedEnemies,
         int totalEnemies,
-        float raidProgress,
+        float questProgress,
         int goldFound,
         int experienceGained,
-        IReadOnlyList<RaidHeroViewData> heroes)
+        IReadOnlyList<QuestHeroViewData> heroes)
     {
         BuildIfNeeded();
         PrepareMinimizedContentRefresh();
-        _titleText.text = $"Рейд {raidNumber}";
+        _titleText.text = $"Квест {questNumber}";
         _statusText.text = success ? "Завершен" : "Провален";
         _timerText.text = "";
         SetHeroSetupControlsVisible(false);
         SetHeroes(heroes);
-        SetRaidProgress(killedEnemies, totalEnemies, raidProgress);
+        SetQuestProgress(killedEnemies, totalEnemies, questProgress);
         ClearEnemies();
         HideEnemyAreaMessage();
         _logText.text = $"{message}\nУбито врагов: {killedEnemies}/{totalEnemies}\nЗолото найдено: {goldFound}\nОпыт получен: {experienceGained}";
@@ -254,7 +254,7 @@ public sealed class RaidPanelView : MonoBehaviour
 
     public void SetSelectedHero(HeroRuntimeData selectedHero)
     {
-        bool canShowSelection = selectedHero != null && selectedHero.State == HeroActivityState.InRaid;
+        bool canShowSelection = selectedHero != null && selectedHero.State == HeroActivityState.InQuest;
 
         for (int i = 0; i < _heroRows.Count; i++)
         {
@@ -287,7 +287,7 @@ public sealed class RaidPanelView : MonoBehaviour
             background.raycastTarget = true;
         }
 
-        _titleText = CreateText("Title", "Рейд", new Vector2(16f, -12f), new Vector2(110f, 34f), 24f, TextAlignmentOptions.Left);
+        _titleText = CreateText("Title", "Квест", new Vector2(16f, -12f), new Vector2(110f, 34f), 24f, TextAlignmentOptions.Left);
         _statusText = CreateText("Status", "Ожидает героя", new Vector2(142f, -14f), new Vector2(160f, 30f), 16f, TextAlignmentOptions.Center);
         _timerText = CreateText("Timer", "00:00", new Vector2(320f, -14f), new Vector2(100f, 30f), 16f, TextAlignmentOptions.Right);
         _heroNameText = CreateText("Hero HP Label", "Назначь героя", new Vector2(20f, -58f), new Vector2(175f, 30f), 15f, TextAlignmentOptions.Left);
@@ -299,8 +299,8 @@ public sealed class RaidPanelView : MonoBehaviour
         _enemyAreaMessage = CreateText(_enemyRowsRoot, "Enemy Area Message", "Собирает лут", new Vector2(0f, -42f), new Vector2(208f, 64f), 18f, TextAlignmentOptions.Center);
         _enemyAreaMessage.gameObject.SetActive(false);
         _logText = CreateText("Log", "Ожидание", new Vector2(20f, -216f), new Vector2(400f, 70f), 14f, TextAlignmentOptions.Left);
-        _raidProgressText = CreateText("Raid Progress Label", "Прогресс рейда", new Vector2(20f, -292f), new Vector2(400f, 20f), 14f, TextAlignmentOptions.Left);
-        _raidProgressBarRoot = CreateBar("Raid Progress", new Vector2(20f, -316f), new Vector2(400f, 18f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _raidProgressFill);
+        _questProgressText = CreateText("Quest Progress Label", "Прогресс квеста", new Vector2(20f, -292f), new Vector2(400f, 20f), 14f, TextAlignmentOptions.Left);
+        _questProgressBarRoot = CreateBar("Quest Progress", new Vector2(20f, -316f), new Vector2(400f, 18f), new Color(0.15f, 0.16f, 0.18f, 1f), new Color(1f, 0.82f, 0.25f, 1f), out _questProgressFill);
         _closeButton = CreateButton("Close Button", "Закрыть", new Vector2(320f, -350f), new Vector2(100f, 30f));
         _closeButton.onClick.AddListener(HandleCloseClicked);
         _closeButton.gameObject.SetActive(false);
@@ -336,8 +336,8 @@ public sealed class RaidPanelView : MonoBehaviour
             _heroRowsRoot.gameObject,
             _enemyRowsRoot.gameObject,
             _logText.gameObject,
-            _raidProgressText.gameObject,
-            _raidProgressBarRoot.gameObject,
+            _questProgressText.gameObject,
+            _questProgressBarRoot.gameObject,
             _closeButton.gameObject,
             _effectRoot.gameObject);
     }
@@ -369,11 +369,11 @@ public sealed class RaidPanelView : MonoBehaviour
         rectTransform.sizeDelta = new Vector2(width, height);
     }
 
-    private void SetHeroes(IReadOnlyList<RaidHeroViewData> heroes)
+    private void SetHeroes(IReadOnlyList<QuestHeroViewData> heroes)
     {
         for (int i = 0; i < heroes.Count; i++)
         {
-            RaidHeroRowView row = GetHeroRow(i);
+            QuestHeroRowView row = GetHeroRow(i);
             row.gameObject.SetActive(true);
             row.SetData(heroes[i], i, HandleHeroRowClicked);
         }
@@ -384,11 +384,11 @@ public sealed class RaidPanelView : MonoBehaviour
         }
     }
 
-    private RaidHeroRowView GetHeroRow(int index)
+    private QuestHeroRowView GetHeroRow(int index)
     {
         while (_heroRows.Count <= index)
         {
-            RaidHeroRowView row = RaidHeroRowView.Create(_heroRowsRoot, _heroRows.Count);
+            QuestHeroRowView row = QuestHeroRowView.Create(_heroRowsRoot, _heroRows.Count);
             _heroRows.Add(row);
         }
 
@@ -410,11 +410,11 @@ public sealed class RaidPanelView : MonoBehaviour
         _heroAttackBarRoot.gameObject.SetActive(visible);
     }
 
-    private void SetEnemies(IReadOnlyList<RaidEnemyViewData> enemies)
+    private void SetEnemies(IReadOnlyList<QuestEnemyViewData> enemies)
     {
         for (int i = 0; i < enemies.Count; i++)
         {
-            RaidEnemyRowView row = GetEnemyRow(i);
+            QuestEnemyRowView row = GetEnemyRow(i);
             row.gameObject.SetActive(true);
             row.SetData(enemies[i]);
         }
@@ -425,11 +425,11 @@ public sealed class RaidPanelView : MonoBehaviour
         }
     }
 
-    private RaidEnemyRowView GetEnemyRow(int index)
+    private QuestEnemyRowView GetEnemyRow(int index)
     {
         while (_enemyRows.Count <= index)
         {
-            RaidEnemyRowView row = RaidEnemyRowView.Create(_enemyRowsRoot, _enemyRows.Count);
+            QuestEnemyRowView row = QuestEnemyRowView.Create(_enemyRowsRoot, _enemyRows.Count);
             _enemyRows.Add(row);
         }
 
@@ -458,7 +458,7 @@ public sealed class RaidPanelView : MonoBehaviour
         }
     }
 
-    private void SetRaidStatsLog(int goldFound, int experienceGained)
+    private void SetQuestStatsLog(int goldFound, int experienceGained)
     {
         _logText.text = $"Золото найдено: {goldFound}\nОпыт получен: {experienceGained}";
     }
@@ -585,14 +585,14 @@ public sealed class RaidPanelView : MonoBehaviour
         rectTransform.anchoredPosition = startPosition;
     }
 
-    private void SetRaidProgress(int killedEnemies, int totalEnemies, float progressRatio)
+    private void SetQuestProgress(int killedEnemies, int totalEnemies, float progressRatio)
     {
         int safeTotal = Mathf.Max(0, totalEnemies);
         int safeKilled = Mathf.Clamp(killedEnemies, 0, safeTotal);
-        _raidProgressText.text = safeTotal <= 0
-            ? "Прогресс рейда: ждет героя"
-            : $"Прогресс рейда: {safeKilled}/{safeTotal}";
-        SetBarFill(_raidProgressFill, progressRatio);
+        _questProgressText.text = safeTotal <= 0
+            ? "Прогресс квеста: ждет героя"
+            : $"Прогресс квеста: {safeKilled}/{safeTotal}";
+        SetBarFill(_questProgressFill, progressRatio);
     }
 
     private void HandleCloseClicked()
@@ -628,9 +628,9 @@ public sealed class RaidPanelView : MonoBehaviour
     }
 }
 
-public readonly struct RaidHeroViewData
+public readonly struct QuestHeroViewData
 {
-    public RaidHeroViewData(HeroRuntimeData hero, string name, float hp, float maxHp, float attackProgress, bool isSelected)
+    public QuestHeroViewData(HeroRuntimeData hero, string name, float hp, float maxHp, float attackProgress, bool isSelected)
     {
         Hero = hero;
         Name = name;
@@ -648,7 +648,7 @@ public readonly struct RaidHeroViewData
     public bool IsSelected { get; }
 }
 
-public sealed class RaidHeroRowView : MonoBehaviour, IPointerClickHandler
+public sealed class QuestHeroRowView : MonoBehaviour, IPointerClickHandler
 {
     private const float _rowWidth = 175f;
     private const float _rowHeight = 46f;
@@ -666,9 +666,9 @@ public sealed class RaidHeroRowView : MonoBehaviour, IPointerClickHandler
 
     public HeroRuntimeData Hero => _hero;
 
-    public static RaidHeroRowView Create(RectTransform parent, int index)
+    public static QuestHeroRowView Create(RectTransform parent, int index)
     {
-        GameObject rowObject = new GameObject($"Hero Row {index + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RaidHeroRowView));
+        GameObject rowObject = new GameObject($"Hero Row {index + 1}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(QuestHeroRowView));
         rowObject.transform.SetParent(parent, false);
 
         RectTransform root = (RectTransform)rowObject.transform;
@@ -678,12 +678,12 @@ public sealed class RaidHeroRowView : MonoBehaviour, IPointerClickHandler
         root.anchoredPosition = new Vector2(0f, -index * 52f);
         root.sizeDelta = new Vector2(_rowWidth, _rowHeight);
 
-        RaidHeroRowView row = rowObject.GetComponent<RaidHeroRowView>();
+        QuestHeroRowView row = rowObject.GetComponent<QuestHeroRowView>();
         row.Build(root);
         return row;
     }
 
-    public void SetData(RaidHeroViewData data, int index, Action<int> clicked)
+    public void SetData(QuestHeroViewData data, int index, Action<int> clicked)
     {
         _hero = data.Hero;
         _index = index;
@@ -839,9 +839,9 @@ public sealed class RaidHeroRowView : MonoBehaviour, IPointerClickHandler
     }
 }
 
-public readonly struct RaidEnemyViewData
+public readonly struct QuestEnemyViewData
 {
-    public RaidEnemyViewData(string name, float hp, float maxHp, float attackProgress)
+    public QuestEnemyViewData(string name, float hp, float maxHp, float attackProgress)
     {
         Name = name;
         Hp = hp;

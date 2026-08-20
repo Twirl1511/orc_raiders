@@ -101,12 +101,12 @@ public sealed class ItemStoragePanelView : MonoBehaviour
 
         if (_detailsTitle != null)
         {
-            _detailsTitle.text = definition.DisplayName;
+            _detailsTitle.text = item.DisplayName;
         }
 
         if (_detailsText != null)
         {
-            _detailsText.text = ItemDescriptionFormatter.BuildDetailsText(definition, _statsConfig);
+            _detailsText.text = ItemDescriptionFormatter.BuildDetailsText(item, _statsConfig);
         }
     }
 
@@ -277,7 +277,20 @@ public sealed class ItemStoragePanelView : MonoBehaviour
         canvasGroup.blocksRaycasts = false;
         canvasGroup.interactable = false;
 
-        _dragIcon = iconObject.GetComponent<Image>();
+        Image background = iconObject.GetComponent<Image>();
+        background.color = item.RarityBackgroundColor;
+        background.raycastTarget = false;
+
+        GameObject spriteObject = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        spriteObject.transform.SetParent(iconObject.transform, false);
+
+        RectTransform spriteRect = (RectTransform)spriteObject.transform;
+        spriteRect.anchorMin = Vector2.zero;
+        spriteRect.anchorMax = Vector2.one;
+        spriteRect.offsetMin = new Vector2(8f, 8f);
+        spriteRect.offsetMax = new Vector2(-8f, -8f);
+
+        _dragIcon = spriteObject.GetComponent<Image>();
         _dragIcon.sprite = definition.Icon;
         _dragIcon.enabled = definition.Icon != null;
         _dragIcon.preserveAspect = true;
@@ -310,9 +323,9 @@ public sealed class ItemStoragePanelView : MonoBehaviour
 
     private void DestroyDragIcon()
     {
-        if (_dragIcon != null)
+        if (_dragIconRect != null)
         {
-            Destroy(_dragIcon.gameObject);
+            Destroy(_dragIconRect.gameObject);
         }
 
         _dragIcon = null;

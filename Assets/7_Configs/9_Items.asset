@@ -12,10 +12,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bee126dd93744c5b14712b474a6e3bb, type: 3}
   m_Name: 9_Items
   m_EditorClassIdentifier: Assembly-CSharp::ItemsConfig
+  _rarities:
+  - _rarity: 0
+    _displayName: Обычный
+    _backgroundColor: {r: 0.92, g: 0.92, b: 0.88, a: 1}
+    _rollWeight: 55
+    _minRollQuality: 0
+    _maxRollQuality: 0.45
+  - _rarity: 1
+    _displayName: Необычный
+    _backgroundColor: {r: 0.26, g: 0.68, b: 0.32, a: 1}
+    _rollWeight: 28
+    _minRollQuality: 0.25
+    _maxRollQuality: 0.55
+  - _rarity: 2
+    _displayName: Редкий
+    _backgroundColor: {r: 0.22, g: 0.42, b: 0.9, a: 1}
+    _rollWeight: 12
+    _minRollQuality: 0.45
+    _maxRollQuality: 0.75
+  - _rarity: 3
+    _displayName: Эпический
+    _backgroundColor: {r: 0.55, g: 0.24, b: 0.82, a: 1}
+    _rollWeight: 4
+    _minRollQuality: 0.65
+    _maxRollQuality: 0.9
+  - _rarity: 4
+    _displayName: Легендарный
+    _backgroundColor: {r: 0.95, g: 0.67, b: 0.16, a: 1}
+    _rollWeight: 1
+    _minRollQuality: 0.8
+    _maxRollQuality: 1
   _items:
   - _id: hunter_bow
     _displayName: Hunter Bow
-    _description: Light ranged weapon for agility-focused skeletons.
+    _description: Light ranged weapon for agility-focused humans.
     _group: 1
     _icon: {fileID: 21300000, guid: ad4fbaf149764c36910197748bd67dad, type: 3}
     _heroOverlaySprite: {fileID: 21300000, guid: 2d2c39d540dd4bc6a70f103315c2c8fb, type: 3}
@@ -31,14 +62,20 @@ MonoBehaviour:
       _primaryStat: 3
       _secondaryStat: 0
       _value: 2
+      _minValue: 1
+      _maxValue: 3
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 4
       _value: 7
+      _minValue: 5
+      _maxValue: 9
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 1
       _value: -0.05
+      _minValue: -0.08
+      _maxValue: -0.03
   - _id: two_handed_sword
     _displayName: Two-Handed Sword
     _description: Heavy melee weapon with strong damage and slower attacks.
@@ -57,14 +94,20 @@ MonoBehaviour:
       _primaryStat: 2
       _secondaryStat: 0
       _value: 3
+      _minValue: 2
+      _maxValue: 4
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 2
       _value: 8
+      _minValue: 6
+      _maxValue: 11
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 1
       _value: 0.12
+      _minValue: 0.06
+      _maxValue: 0.16
   - _id: ritual_staff
     _displayName: Ritual Staff
     _description: Caster weapon for intelligence and utility builds.
@@ -83,14 +126,20 @@ MonoBehaviour:
       _primaryStat: 4
       _secondaryStat: 0
       _value: 3
+      _minValue: 2
+      _maxValue: 4
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 4
       _value: 4
+      _minValue: 3
+      _maxValue: 6
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 5
       _value: 3
+      _minValue: 2
+      _maxValue: 5
   - _id: sword_and_shield
     _displayName: Sword and Shield
     _description: Balanced melee set with reliable protection.
@@ -109,18 +158,26 @@ MonoBehaviour:
       _primaryStat: 1
       _secondaryStat: 0
       _value: 1
+      _minValue: 1
+      _maxValue: 2
     - _target: 1
       _primaryStat: 2
       _secondaryStat: 0
       _value: 1
+      _minValue: 1
+      _maxValue: 2
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 2
       _value: 4
+      _minValue: 3
+      _maxValue: 6
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 7
       _value: 6
+      _minValue: 4
+      _maxValue: 8
   - _id: heavy_armor
     _displayName: Heavy Armor
     _description: Bulky plate armor with high protection and mobility drawbacks.
@@ -139,18 +196,26 @@ MonoBehaviour:
       _primaryStat: 1
       _secondaryStat: 0
       _value: 3
+      _minValue: 2
+      _maxValue: 4
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 7
       _value: 10
+      _minValue: 8
+      _maxValue: 13
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 6
       _value: -4
+      _minValue: -6
+      _maxValue: -2
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 1
       _value: 0.12
+      _minValue: 0.06
+      _maxValue: 0.16
   - _id: medium_armor
     _displayName: Medium Armor
     _description: Practical armor with balanced protection.
@@ -169,14 +234,20 @@ MonoBehaviour:
       _primaryStat: 1
       _secondaryStat: 0
       _value: 1
+      _minValue: 1
+      _maxValue: 3
     - _target: 1
       _primaryStat: 3
       _secondaryStat: 0
       _value: -1
+      _minValue: -2
+      _maxValue: -1
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 7
       _value: 6
+      _minValue: 4
+      _maxValue: 8
   - _id: leather_armor
     _displayName: Leather Armor
     _description: Light armor for mobile heroes.
@@ -195,14 +266,20 @@ MonoBehaviour:
       _primaryStat: 3
       _secondaryStat: 0
       _value: 2
+      _minValue: 1
+      _maxValue: 3
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 7
       _value: 3
+      _minValue: 2
+      _maxValue: 5
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 6
       _value: 4
+      _minValue: 2
+      _maxValue: 6
   - _id: battle_robe
     _displayName: Battle Robe
     _description: Caster robe with light protection and utility.
@@ -221,11 +298,17 @@ MonoBehaviour:
       _primaryStat: 4
       _secondaryStat: 0
       _value: 2
+      _minValue: 1
+      _maxValue: 3
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 7
       _value: 1
+      _minValue: 1
+      _maxValue: 3
     - _target: 2
       _primaryStat: 0
       _secondaryStat: 5
       _value: 3
+      _minValue: 2
+      _maxValue: 5

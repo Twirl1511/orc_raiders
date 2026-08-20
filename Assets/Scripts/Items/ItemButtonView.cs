@@ -11,12 +11,14 @@ public sealed class ItemButtonView : MonoBehaviour, IPointerEnterHandler, IPoint
 
     private ItemStoragePanelView _owner;
     private ItemRuntimeData _item;
+    private Image _background;
     private CanvasGroup _canvasGroup;
     private HeroItemSlotView _pendingDropSlot;
     private bool _dragging;
 
     private void Awake()
     {
+        _background = GetComponent<Image>();
         _canvasGroup = GetComponent<CanvasGroup>();
 
         if (_canvasGroup == null)
@@ -34,6 +36,14 @@ public sealed class ItemButtonView : MonoBehaviour, IPointerEnterHandler, IPoint
         SetDraggingVisual(false);
 
         ItemDefinition definition = item != null ? item.Definition : null;
+
+        if (_background != null)
+        {
+            _background.color = item != null
+                ? item.RarityBackgroundColor
+                : new Color(0.92f, 0.92f, 0.9f, 1f);
+            _background.raycastTarget = true;
+        }
 
         if (_icon != null)
         {

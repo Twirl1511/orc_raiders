@@ -1,13 +1,13 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Raids", menuName = "GAME/Raids")]
-public sealed class RaidConfig : ScriptableObject
+[CreateAssetMenu(fileName = "Quests", menuName = "GAME/Quests")]
+public sealed class QuestConfig : ScriptableObject
 {
     [Header("Spawn")]
-    [SerializeField, Min(0)] private int _startingRaidCount = 3;
-    [SerializeField, Min(1f)] private float _newRaidIntervalSeconds = 60f;
-    [SerializeField] private bool _useManualRaidSpawnButton;
-    [SerializeField, Min(1f)] private float _waitingRaidLifetimeSeconds = 60f;
+    [SerializeField, Min(0)] private int _startingQuestCount = 3;
+    [SerializeField, Min(1f)] private float _newQuestIntervalSeconds = 60f;
+    [SerializeField] private bool _useManualQuestSpawnButton;
+    [SerializeField, Min(1f)] private float _waitingQuestLifetimeSeconds = 60f;
 
     [Header("Heroes")]
     [SerializeField, Min(1)] private int _minHeroSlots = 1;
@@ -25,10 +25,10 @@ public sealed class RaidConfig : ScriptableObject
     [SerializeField, Min(1)] private int _maxEnemiesPerBattle = 2;
     [SerializeField, Min(0f)] private float _battleTransitionDelaySeconds = 3f;
 
-    public int StartingRaidCount => _startingRaidCount;
-    public float NewRaidIntervalSeconds => _newRaidIntervalSeconds;
-    public bool UseManualRaidSpawnButton => _useManualRaidSpawnButton;
-    public float WaitingRaidLifetimeSeconds => _waitingRaidLifetimeSeconds;
+    public int StartingQuestCount => _startingQuestCount;
+    public float NewQuestIntervalSeconds => _newQuestIntervalSeconds;
+    public bool UseManualQuestSpawnButton => _useManualQuestSpawnButton;
+    public float WaitingQuestLifetimeSeconds => _waitingQuestLifetimeSeconds;
     public int MinHeroSlots => Mathf.Clamp(_minHeroSlots, 1, 3);
     public int MaxHeroSlots => Mathf.Clamp(_maxHeroSlots, MinHeroSlots, 3);
     public float AdditionalHeroWindowSeconds => Mathf.Max(0f, _additionalHeroWindowSeconds);
@@ -42,9 +42,9 @@ public sealed class RaidConfig : ScriptableObject
 
     public bool ValidateForRuntime()
     {
-        return _startingRaidCount >= 0 &&
-            _newRaidIntervalSeconds > 0f &&
-            _waitingRaidLifetimeSeconds > 0f &&
+        return _startingQuestCount >= 0 &&
+            _newQuestIntervalSeconds > 0f &&
+            _waitingQuestLifetimeSeconds > 0f &&
             _minHeroSlots >= 1 &&
             _maxHeroSlots >= _minHeroSlots &&
             _maxHeroSlots <= 3 &&
@@ -61,9 +61,9 @@ public sealed class RaidConfig : ScriptableObject
 
     private void OnValidate()
     {
-        _startingRaidCount = Mathf.Max(0, _startingRaidCount);
-        _newRaidIntervalSeconds = Mathf.Max(1f, _newRaidIntervalSeconds);
-        _waitingRaidLifetimeSeconds = Mathf.Max(1f, _waitingRaidLifetimeSeconds);
+        _startingQuestCount = Mathf.Max(0, _startingQuestCount);
+        _newQuestIntervalSeconds = Mathf.Max(1f, _newQuestIntervalSeconds);
+        _waitingQuestLifetimeSeconds = Mathf.Max(1f, _waitingQuestLifetimeSeconds);
         _minHeroSlots = Mathf.Clamp(_minHeroSlots, 1, 3);
         _maxHeroSlots = Mathf.Clamp(_maxHeroSlots, _minHeroSlots, 3);
         _additionalHeroWindowSeconds = Mathf.Max(0f, _additionalHeroWindowSeconds);

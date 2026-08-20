@@ -81,8 +81,8 @@ public sealed class ItemTooltipView : MonoBehaviour
             _icon.raycastTarget = false;
         }
 
-        _titleText.text = definition.DisplayName;
-        _bodyText.text = ItemDescriptionFormatter.BuildDetailsText(definition, _statsConfig);
+        _titleText.text = item.DisplayName;
+        _bodyText.text = ItemDescriptionFormatter.BuildDetailsText(item, _statsConfig);
         PrepareText(_titleText);
         PrepareText(_bodyText);
 

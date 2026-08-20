@@ -5,7 +5,7 @@ public enum HeroActivityState
 {
     OnBase = 0,
     Resting = 1,
-    InRaid = 2
+    InQuest = 2
 }
 
 public sealed class HeroRuntimeData
@@ -168,18 +168,18 @@ public sealed class HeroRuntimeData
 
         for (int i = 0; i < _equippedItems.Length; i++)
         {
-            ItemDefinition item = _equippedItems[i] != null ? _equippedItems[i].Definition : null;
+            ItemRuntimeData item = _equippedItems[i];
 
             if (item == null)
             {
                 continue;
             }
 
-            IReadOnlyList<ItemStatModifier> modifiers = item.StatModifiers;
+            IReadOnlyList<ItemRuntimeStatModifier> modifiers = item.StatModifiers;
 
             for (int modifierIndex = 0; modifierIndex < modifiers.Count; modifierIndex++)
             {
-                ItemStatModifier modifier = modifiers[modifierIndex];
+                ItemRuntimeStatModifier modifier = modifiers[modifierIndex];
 
                 if (modifier != null && modifier.Target == ItemStatTarget.Primary)
                 {
@@ -205,18 +205,18 @@ public sealed class HeroRuntimeData
 
         for (int i = 0; i < _equippedItems.Length; i++)
         {
-            ItemDefinition item = _equippedItems[i] != null ? _equippedItems[i].Definition : null;
+            ItemRuntimeData item = _equippedItems[i];
 
             if (item == null)
             {
                 continue;
             }
 
-            IReadOnlyList<ItemStatModifier> modifiers = item.StatModifiers;
+            IReadOnlyList<ItemRuntimeStatModifier> modifiers = item.StatModifiers;
 
             for (int modifierIndex = 0; modifierIndex < modifiers.Count; modifierIndex++)
             {
-                ItemStatModifier modifier = modifiers[modifierIndex];
+                ItemRuntimeStatModifier modifier = modifiers[modifierIndex];
 
                 if (modifier != null && modifier.Target == ItemStatTarget.Secondary)
                 {
@@ -295,8 +295,8 @@ public sealed class HeroRuntimeData
                 return "На базе";
             case HeroActivityState.Resting:
                 return "Отдыхает";
-            case HeroActivityState.InRaid:
-                return "В рейде";
+            case HeroActivityState.InQuest:
+                return "В квесте";
             default:
                 return State.ToString();
         }

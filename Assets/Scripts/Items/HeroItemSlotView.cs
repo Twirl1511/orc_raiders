@@ -9,13 +9,13 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
     [SerializeField] private Image _icon = null;
     [SerializeField] private TextMeshProUGUI _label = null;
 
-    private NecropolisSystem _owner;
+    private GuildSystem _owner;
     private ItemTooltipView _itemTooltip;
     private HeroRuntimeData _hero;
     private int _slotIndex;
     private bool _allowInteraction = true;
 
-    public void Configure(NecropolisSystem owner, int slotIndex, ItemTooltipView itemTooltip)
+    public void Configure(GuildSystem owner, int slotIndex, ItemTooltipView itemTooltip)
     {
         _owner = owner;
         _slotIndex = slotIndex;
@@ -121,9 +121,10 @@ public sealed class HeroItemSlotView : MonoBehaviour, IDropHandler, IPointerClic
             _background.raycastTarget = true;
             if (definition != null)
             {
+                Color rarityColor = item.RarityBackgroundColor;
                 _background.color = _allowInteraction
-                    ? new Color(0.88f, 0.9f, 0.86f, 1f)
-                    : new Color(0.48f, 0.49f, 0.46f, 1f);
+                    ? rarityColor
+                    : Color.Lerp(rarityColor, new Color(0.12f, 0.13f, 0.14f, 1f), 0.55f);
             }
             else
             {

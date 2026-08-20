@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public sealed class NecropolisSystem : MonoBehaviour
+public sealed class GuildSystem : MonoBehaviour
 {
     private static readonly Color _selectedHeroOutlineColor = new Color(1f, 0.84f, 0.12f, 1f);
     private static readonly Vector2 _selectedHeroOutlinePadding = new Vector2(0.14f, 0.14f);
@@ -13,7 +13,7 @@ public sealed class NecropolisSystem : MonoBehaviour
     private const float _minSpriteWorldSize = 0.0001f;
 
     [Header("Config")]
-    [SerializeField] private NecropolisConfig _config = null;
+    [SerializeField] private GuildConfig _config = null;
     [SerializeField] private TooltipConfig _tooltipConfig = null;
     [SerializeField] private Camera _camera = null;
 
@@ -33,11 +33,11 @@ public sealed class NecropolisSystem : MonoBehaviour
     [Header("Rest Zone")]
     [SerializeField] private Collider2D _restZoneCollider = null;
 
-    [Header("Raids")]
-    [SerializeField] private RaidSystem _raidSystem = null;
+    [Header("Quests")]
+    [SerializeField] private QuestSystem _questSystem = null;
 
-    [Header("Human Village")]
-    [SerializeField] private HumanVillageSystem _humanVillageSystem = null;
+    [Header("World Map")]
+    [SerializeField] private WorldMapSystem _worldMapSystem = null;
 
     private readonly List<DiceRuntimeData> _availableDice = new List<DiceRuntimeData>();
     private readonly List<DiceRuntimeData> _selectedDice = new List<DiceRuntimeData>();
@@ -114,7 +114,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         }
     }
 
-    public bool Configure(NecropolisConfig config, Camera sceneCamera)
+    public bool Configure(GuildConfig config, Camera sceneCamera)
     {
         bool changed = _config != config || _camera != sceneCamera;
         _config = config;
@@ -129,10 +129,10 @@ public sealed class NecropolisSystem : MonoBehaviour
             return;
         }
 
-        bool clearSelection = _selectedHero == heroData && state == HeroActivityState.InRaid;
+        bool clearSelection = _selectedHero == heroData && state == HeroActivityState.InQuest;
         heroData.SetState(state);
 
-        if (state != HeroActivityState.InRaid)
+        if (state != HeroActivityState.InQuest)
         {
             heroData.SetMapPosition(GetDefaultHeroPositionForState(heroData, state));
         }
@@ -151,9 +151,9 @@ public sealed class NecropolisSystem : MonoBehaviour
         RefreshHeroAfterStateChange(heroData);
     }
 
-    public void SelectHeroFromRaid(HeroRuntimeData heroData)
+    public void SelectHeroFromQuest(HeroRuntimeData heroData)
     {
-        if (!_initialized || heroData == null || !_heroes.Contains(heroData) || heroData.State != HeroActivityState.InRaid)
+        if (!_initialized || heroData == null || !_heroes.Contains(heroData) || heroData.State != HeroActivityState.InQuest)
         {
             return;
         }
@@ -196,7 +196,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         DiceDefinition rewardDice = configuredDice[Random.Range(0, configuredDice.Count)];
         _availableDice.Add(new DiceRuntimeData(rewardDice));
-        _statusText.text = $"Рейд принес кость: {rewardDice.DisplayName}.";
+        _statusText.text = $"Квест принес кубик: {rewardDice.DisplayName}.";
         RefreshUi();
         return rewardDice;
     }
@@ -299,7 +299,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         heroData.SetMaxHp(CalculateHeroMaxHp(heroData), false);
         RefreshHeroEquipmentVisual(heroData);
         RefreshHeroHealthBar(heroData);
-        _raidSystem.RefreshHeroCombatStats(heroData);
+        _questSystem.RefreshHeroCombatStats(heroData);
 
         if (_selectedHero == heroData)
         {
@@ -336,96 +336,96 @@ public sealed class NecropolisSystem : MonoBehaviour
     {
         if (_config == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(NecropolisConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires {nameof(GuildConfig)}.");
         }
 
         if (_config.DiceConfig == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(DiceConfig)} in {nameof(NecropolisConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires {nameof(DiceConfig)} in {nameof(GuildConfig)}.");
         }
 
         if (_config.StatsConfig == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(StatsConfig)} in {nameof(NecropolisConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires {nameof(StatsConfig)} in {nameof(GuildConfig)}.");
         }
 
         if (_config.RestConfig == null || !_config.RestConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(RestConfig)} in {nameof(NecropolisConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires valid {nameof(RestConfig)} in {nameof(GuildConfig)}.");
         }
 
         if (_config.LevelUpConfig == null || !_config.LevelUpConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(NecropolisConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires valid {nameof(LevelUpConfig)} in {nameof(GuildConfig)}.");
         }
 
         if (_tooltipConfig == null || !_tooltipConfig.ValidateForRuntime())
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid {nameof(TooltipConfig)}.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires valid {nameof(TooltipConfig)}.");
         }
 
         if (!_config.DiceConfig.ValidateForRuntime(_config))
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid dice config.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires valid dice config.");
         }
 
         if (!_config.StatsConfig.ValidateForRuntime(_config))
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires valid stats config.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires valid stats config.");
         }
 
         if (_camera == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene camera.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires scene camera.");
         }
 
         if (_canvas == null || _availableDiceRoot == null || _selectedDiceRoot == null || _diceButtonTemplate == null ||
             _selectedDiceLabel == null || _statusText == null || _heroInfoPanel == null || _createHeroButton == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires scene UI references.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires scene UI references.");
         }
 
         if (!_heroInfoPanel.HasRequiredReferences())
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires configured {nameof(HeroInfoPanelView)} references.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires configured {nameof(HeroInfoPanelView)} references.");
         }
 
         if (_itemStorage == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(ItemStorageSystem)} reference.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires {nameof(ItemStorageSystem)} reference.");
         }
 
         if (_itemTooltip == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires {nameof(ItemTooltipView)} reference.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires {nameof(ItemTooltipView)} reference.");
         }
 
         if (_heroItemSlots == null || _heroItemSlots.Length < HeroRuntimeData.EquipmentSlotCount)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires hero item slot references.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires hero item slot references.");
         }
 
         for (int i = 0; i < HeroRuntimeData.EquipmentSlotCount; i++)
         {
             if (_heroItemSlots[i] == null)
             {
-                throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires hero item slot {i + 1} reference.");
+                throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires hero item slot {i + 1} reference.");
             }
         }
 
         if (_restZoneCollider == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires rest zone collider reference.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires rest zone collider reference.");
         }
 
-        if (_raidSystem == null)
+        if (_questSystem == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires raid system reference.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires quest system reference.");
         }
 
-        if (_humanVillageSystem == null)
+        if (_worldMapSystem == null)
         {
-            throw new System.InvalidOperationException($"{nameof(NecropolisSystem)} requires human village system reference.");
+            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires world map system reference.");
         }
     }
 
@@ -439,7 +439,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         Vector3 worldPosition = GetMouseWorldPosition();
         HeroRuntimeData heroData = GetHeroAtWorldPosition(worldPosition);
 
-        if (heroData == null || heroData.State == HeroActivityState.InRaid || heroData.ViewObject == null)
+        if (heroData == null || heroData.State == HeroActivityState.InQuest || heroData.ViewObject == null)
         {
             return;
         }
@@ -472,13 +472,13 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         Vector2 screenPosition = Mouse.current.position.ReadValue();
 
-        if (_raidSystem.TryAcceptDroppedHero(heroData, screenPosition))
+        if (_questSystem.TryAcceptDroppedHero(heroData, screenPosition))
         {
             _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
             return;
         }
 
-        if (_humanVillageSystem.TryAcceptDroppedHero(heroData, screenPosition))
+        if (_worldMapSystem.TryAcceptDroppedHero(heroData, screenPosition))
         {
             _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
             return;
@@ -545,7 +545,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         RefreshDiceGrid(_selectedDiceRoot, _selectedDice, UnselectDice);
 
         _createHeroButton.interactable = _selectedDice.Count >= _config.RequiredDiceCount;
-        _selectedDiceLabel.text = $"Кости в Некрополе: {_selectedDice.Count}/{_config.RequiredDiceCount}";
+        _selectedDiceLabel.text = $"Кубики в гильдии: {_selectedDice.Count}/{_config.RequiredDiceCount}";
     }
 
     private void RefreshDiceGrid(RectTransform root, List<DiceRuntimeData> dice, System.Action<DiceRuntimeData> clickAction)
@@ -623,7 +623,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         _nextHeroId++;
         _selectedDice.Clear();
-        _statusText.text = $"{heroData.Name} рожден.";
+        _statusText.text = $"{heroData.Name} нанят.";
         ShowHeroInfo(heroData);
         RefreshUi();
     }
@@ -638,7 +638,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         Sprite baseSprite = heroData.BaseSprite != null ? heroData.BaseSprite : _whiteSprite;
         Color baseColor = heroData.BaseSprite != null ? Color.white : _config.HeroVisualColor;
         SpriteRenderer baseRenderer = CreateHeroLayerRenderer(
-            "Base Skeleton",
+            "Base Human",
             heroObject.transform,
             baseSprite,
             visualSize,
@@ -693,7 +693,7 @@ public sealed class NecropolisSystem : MonoBehaviour
                 continue;
             }
 
-            bool isVisible = heroData.State != HeroActivityState.InRaid;
+            bool isVisible = heroData.State != HeroActivityState.InQuest;
             heroData.ViewObject.SetActive(isVisible);
 
             if (isVisible)
@@ -969,7 +969,7 @@ public sealed class NecropolisSystem : MonoBehaviour
             return;
         }
 
-        bool isVisible = heroData.State != HeroActivityState.InRaid;
+        bool isVisible = heroData.State != HeroActivityState.InQuest;
         healthBar.SetVisible(isVisible);
 
         if (isVisible)
@@ -991,7 +991,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         RefreshHeroVisualStates();
         RefreshHeroItemSlots(heroData);
         _heroInfoPanel.ShowHero(heroData, _config.StatsConfig, _config.LevelUpConfig, CanEditHeroPanel(heroData));
-        _raidSystem?.RefreshHeroSelectionVisuals();
+        _questSystem?.RefreshHeroSelectionVisuals();
     }
 
     private void ClearHeroSelection()
@@ -1002,7 +1002,7 @@ public sealed class NecropolisSystem : MonoBehaviour
         SetHeroInfoPanelVisible(false);
         RefreshHeroItemSlots(null);
         RefreshHeroVisualStates();
-        _raidSystem?.RefreshHeroSelectionVisuals();
+        _questSystem?.RefreshHeroSelectionVisuals();
     }
 
     private void SetHeroInfoPanelVisible(bool visible)
@@ -1035,7 +1035,7 @@ public sealed class NecropolisSystem : MonoBehaviour
 
         _selectedHero.SetMaxHp(CalculateHeroMaxHp(_selectedHero), false);
         RefreshHeroHealthBar(_selectedHero);
-        _raidSystem.RefreshHeroCombatStats(_selectedHero);
+        _questSystem.RefreshHeroCombatStats(_selectedHero);
         ShowHeroInfo(_selectedHero);
     }
 

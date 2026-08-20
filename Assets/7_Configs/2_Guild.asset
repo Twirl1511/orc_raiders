@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6b21d4d3eaf64a44a1c7347c62b3d901, type: 3}
-  m_Name: 2_Necropolis
-  m_EditorClassIdentifier: Assembly-CSharp::NecropolisConfig
+  m_Name: 2_Guild
+  m_EditorClassIdentifier: Assembly-CSharp::GuildConfig
   _requiredDiceCount: 6
   _diceConfig: {fileID: 11400000, guid: e0b719f07e2a4f7db1bbf54472456a21, type: 2}
   _statsConfig: {fileID: 11400000, guid: 24170c34a08f4843bdd2ca6c88a02000, type: 2}
