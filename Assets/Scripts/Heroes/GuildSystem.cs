@@ -36,9 +36,6 @@ public sealed class GuildSystem : MonoBehaviour
     [Header("Quests")]
     [SerializeField] private QuestSystem _questSystem = null;
 
-    [Header("World Map")]
-    [SerializeField] private WorldMapSystem _worldMapSystem = null;
-
     private readonly List<DiceRuntimeData> _availableDice = new List<DiceRuntimeData>();
     private readonly List<DiceRuntimeData> _selectedDice = new List<DiceRuntimeData>();
     private readonly List<GameObject> _runtimeDiceButtons = new List<GameObject>();
@@ -423,10 +420,6 @@ public sealed class GuildSystem : MonoBehaviour
             throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires quest system reference.");
         }
 
-        if (_worldMapSystem == null)
-        {
-            throw new System.InvalidOperationException($"{nameof(GuildSystem)} requires world map system reference.");
-        }
     }
 
     private void TryBeginHeroDrag()
@@ -473,12 +466,6 @@ public sealed class GuildSystem : MonoBehaviour
         Vector2 screenPosition = Mouse.current.position.ReadValue();
 
         if (_questSystem.TryAcceptDroppedHero(heroData, screenPosition))
-        {
-            _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
-            return;
-        }
-
-        if (_worldMapSystem.TryAcceptDroppedHero(heroData, screenPosition))
         {
             _statusText.text = $"{heroData.Name}: {heroData.GetStateDisplayName()}.";
             return;
